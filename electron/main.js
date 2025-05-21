@@ -20,13 +20,16 @@ function startWatcher(directory) {
 	if (fileWatcher) {
 		fileWatcher.close();
 	}
-
 	// Créer un nouveau watcher
 	fileWatcher = chokidar.watch(directory, {
 		ignored: /(^|[\/\\])\../, // ignore les fichiers cachés
 		persistent: true,
 		ignoreInitial: true,
-		depth: 0, // Limite la surveillance au niveau supérieur du dossier
+		depth: 99, // Surveillance récursive de tous les sous-dossiers
+		awaitWriteFinish: {
+			stabilityThreshold: 300,
+			pollInterval: 100,
+		},
 	});
 
 	// Événements à surveiller

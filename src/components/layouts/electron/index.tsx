@@ -137,6 +137,17 @@ const ElectronLayout = () => {
 			console.error(error);
 		}
 	};
+	const handleDirectoryClose = () => {
+		// Réinitialiser le répertoire courant
+		setCurrentDirectory(null);
+		// Supprimer éventuellement la référence du dernier répertoire ouvert dans les paramètres
+		if (isElectron) {
+			window.electron.setSettings({
+				key: "lastOpenDirectory",
+				value: null,
+			});
+		}
+	};
 
 	const handleFileSave = async (tabId: string) => {
 		if (!isElectron) return;
@@ -420,6 +431,7 @@ const ElectronLayout = () => {
 							currentDirectory={currentDirectory}
 							onFileSelect={handleFileSelect}
 							onDirectoryOpen={handleDirectoryOpen}
+							onDirectoryClose={handleDirectoryClose}
 						/>
 					</ResizablePanel>
 				)}
