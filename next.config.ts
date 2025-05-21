@@ -1,7 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+	output: "export",
+	devIndicators: false,
+	eslint: {
+		ignoreDuringBuilds: true,
+	},
+	images: {
+		unoptimized: true,
+	},
+	webpack: (config) => {
+		return config;
+	},
 };
 
 export default nextConfig;
