@@ -1,12 +1,6 @@
 "use client";
 
-import {
-	useState,
-	useEffect,
-	useCallback,
-	useRef,
-	SetStateAction,
-} from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { FileData, FileChangeEvent } from "@/lib/types";
 import { toast } from "sonner";
 import SidebarHeader from "./sidebar/sidebar-header";
@@ -149,7 +143,6 @@ export default function Sidebar({
 			toast.error("Impossible de lire le contenu du dossier");
 		}
 	};
-
 	const refreshFolder = async (path: string, showNotification = true) => {
 		if (!isElectron) return;
 
@@ -161,6 +154,17 @@ export default function Sidebar({
 			const result = await window.electron.refreshDirectory(path);
 			if (result.success) {
 				updateFilesTree(path, result.files || []);
+
+				if (Object.keys(expandedFolders).length > 0) {
+					const dossiersDéjàOuverts = { ...expandedFolders };
+
+					setExpandedFolders({});
+
+					setTimeout(() => {
+						setExpandedFolders(dossiersDéjàOuverts);
+					}, 50);
+				}
+
 				if (showNotification) {
 					toast.success("Dossier rafraîchi avec succès");
 				}
@@ -190,84 +194,6 @@ export default function Sidebar({
 			return newState;
 		});
 	}, []);
-
-	const updateFilesWithChildren = (
-		files: FileData[],
-		targetPath: string,
-		children: FileData[]
-	): FileData[] => {
-		return files.map((file) => {
-			if (file.path === targetPath) {
-				return { ...file, children };
-			} else if (file.children) {
-				return {
-					...file,
-					children: updateFilesWithChildren(
-						file.children,
-						targetPath,
-						children
-					),
-				};
-			}
-			return file;
-		});
-	};
-
-	const handleCreateFile = async () => {
-		if (!selectedFolder || !isElectron || !newFileName.trim()) return;
-
-		setIsLoading(true);
-		try {
-			const result = await window.electron.createFile({
-				dirPath: selectedFolder,
-				fileName: newFileName.trim(),
-			});
-
-			if (result.success) {
-				refreshFolder(selectedFolder);
-				toast.success(`Fichier "${newFileName}" créé avec succès`);
-				setNewFileName("");
-				setIsCreatingFile(false);
-			} else {
-				toast.error(
-					`Erreur lors de la création du fichier: ${result.message}`
-				);
-			}
-		} catch (error) {
-			console.error("Échec de création du fichier:", error);
-			toast.error("Impossible de créer le fichier");
-		} finally {
-			setIsLoading(false);
-		}
-	};
-
-	const handleCreateFolder = async () => {
-		if (!selectedFolder || !isElectron || !newFolderName.trim()) return;
-
-		setIsLoading(true);
-		try {
-			const result = await window.electron.createDirectory({
-				dirPath: selectedFolder,
-				folderName: newFolderName.trim(),
-			});
-
-			if (result.success) {
-				refreshFolder(selectedFolder);
-				toast.success(`Dossier "${newFolderName}" créé avec succès`);
-				setNewFolderName("");
-				setIsCreatingFolder(false);
-			} else {
-				toast.error(
-					`Erreur lors de la création du dossier: ${result.message}`
-				);
-			}
-		} catch (error) {
-			console.error("Échec de création du dossier:", error);
-			toast.error("Impossible de créer le dossier");
-		} finally {
-			setIsLoading(false);
-		}
-	};
 
 	const closeDirectory = useCallback(() => {
 		setFiles([]);
@@ -306,7 +232,6 @@ export default function Sidebar({
 				closeDirectory={closeDirectory}
 				setIsLoading={setIsLoading}
 				setFiles={setFiles}
-				updateFilesWithChildren={updateFilesWithChildren}
 			/>
 
 			<SidebarDialogs
@@ -319,8 +244,9 @@ export default function Sidebar({
 				setIsCreatingFolder={setIsCreatingFolder}
 				setNewFileName={setNewFileName}
 				setNewFolderName={setNewFolderName}
-				handleCreateFile={handleCreateFile}
-				handleCreateFolder={handleCreateFolder}
+				selectedFolder={selectedFolder}
+				refreshFolder={refreshFolder}
+				setIsLoading={setIsLoading}
 			/>
 		</div>
 	);

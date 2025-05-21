@@ -92,6 +92,7 @@ export interface FileTab {
 	content: string;
 	originalContent?: string; // Contenu original du fichier pour comparer après les opérations d'annulation
 	language: string;
+	languageOverride?: string | null; // Langage choisi explicitement par l'utilisateur (null = auto-détection)
 	active?: boolean;
 	modified?: boolean;
 }

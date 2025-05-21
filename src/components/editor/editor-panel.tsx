@@ -32,16 +32,10 @@ export default function EditorPanel({
 	onRedo,
 }: EditorPanelProps) {
 	const tabsRef = useRef<HTMLDivElement>(null);
-	const [cursorPosition, setCursorPosition] = useState({
-		line: 1,
-		column: 1,
-	});
 	const isElectron = typeof window !== "undefined" && window.electron;
 
-	// Handle keyboard shortcuts
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			// Save file with Cmd/Ctrl+S
 			if ((e.metaKey || e.ctrlKey) && e.key === "s") {
 				e.preventDefault();
 				if (activeTabId) {
@@ -50,7 +44,6 @@ export default function EditorPanel({
 				}
 			}
 
-			// Close tab with Cmd/Ctrl+W
 			if ((e.metaKey || e.ctrlKey) && e.key === "w") {
 				e.preventDefault();
 				if (activeTabId) {
@@ -63,7 +56,6 @@ export default function EditorPanel({
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [activeTabId, onSaveFile, onTabClose]);
 
-	// Scroll active tab into view
 	useEffect(() => {
 		if (tabsRef.current && activeTabId) {
 			const activeTabElement = tabsRef.current.querySelector(
@@ -79,39 +71,12 @@ export default function EditorPanel({
 		}
 	}, [activeTabId]);
 
-	// Handle cursor position change
-	const handleCursorPositionChange = (line: number, column: number) => {
-		setCursorPosition({ line, column });
-		onCursorPositionChange(line, column);
-	};
-
-	// Fonctions pour annuler et rétablir
-	const handleUndo = () => {
-		if (activeTabId) {
-			// Transmet l'action aux composants enfants via les callbacks
-			if (onUndo) onUndo();
-		}
-	};
-
-	const handleRedo = () => {
-		if (activeTabId) {
-			// Transmet l'action aux composants enfants via les callbacks
-			if (onRedo) onRedo();
-		}
-	};
-
-	// Find active tab
-	const activeTab = tabs.find((tab) => tab.id === activeTabId);
-
 	return (
 		<div className="flex flex-col h-full">
 			{tabs.length > 0 ? (
 				<>
 					<div className="border-b border-border">
-						<ScrollArea
-							orientation="horizontal"
-							className="max-w-full"
-						>
+						<ScrollArea className="max-w-full">
 							<div className="flex" ref={tabsRef}>
 								{tabs.map((tab) => (
 									<div
@@ -164,42 +129,13 @@ export default function EditorPanel({
 									}
 									onSave={() => onSaveFile(tab.id)}
 									onCursorPositionChange={
-										handleCursorPositionChange
+										onCursorPositionChange
 									}
 									onUndo={onUndo}
 									onRedo={onRedo}
 								/>
 							</div>
 						))}
-					</div>
-
-					{/* Status bar */}
-					<div className="h-6 border-t border-border bg-muted text-muted-foreground text-xs flex items-center px-4 justify-between">
-						<div className="flex items-center space-x-4">
-							<span>
-								Ln {cursorPosition.line}, Col{" "}
-								{cursorPosition.column}
-							</span>
-							{activeTab && (
-								<span className="capitalize">
-									{activeTab.language}
-								</span>
-							)}
-						</div>
-						<div className="flex items-center">
-							{activeTab?.modified && (
-								<button
-									onClick={() =>
-										activeTabId && onSaveFile(activeTabId)
-									}
-									className="flex items-center hover:text-foreground transition-colors"
-									title="Save file (Cmd+S)"
-								>
-									<SaveIcon className="h-3.5 w-3.5 mr-1" />
-									<span>Save</span>
-								</button>
-							)}
-						</div>
 					</div>
 				</>
 			) : (

@@ -20,6 +20,7 @@ import {
 	DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { getLanguageFromFilename } from "@/lib/editor-utils";
 
 const ElectronLayout = () => {
 	const [isClient, setIsClient] = useState(false);
@@ -35,7 +36,6 @@ const ElectronLayout = () => {
 	});
 	const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
 	const [tabToClose, setTabToClose] = useState<string | null>(null);
-	const [isAppClosing, setIsAppClosing] = useState(false);
 
 	const isElectron = typeof window !== "undefined" && window.electron;
 
@@ -138,9 +138,7 @@ const ElectronLayout = () => {
 		}
 	};
 	const handleDirectoryClose = () => {
-		// Réinitialiser le répertoire courant
 		setCurrentDirectory(null);
-		// Supprimer éventuellement la référence du dernier répertoire ouvert dans les paramètres
 		if (isElectron) {
 			window.electron.setSettings({
 				key: "lastOpenDirectory",
@@ -256,7 +254,9 @@ const ElectronLayout = () => {
 		window.electron
 			.readFile(fileData.path)
 			.then((content: string | null) => {
-				if (!content) throw new Error("Failed to read file");
+				if (!content) throw new Error("Failed to read file"); // Déterminer le langage automatiquement à partir du nom de fichier
+				const detectedLanguage = getLanguageFromFilename(fileData.name);
+
 				const newTab: FileTab = {
 					id: `tab-${Date.now()}`,
 					name: fileData.name,
@@ -264,7 +264,8 @@ const ElectronLayout = () => {
 					content,
 					originalContent: content,
 					active: true,
-					language: getLanguageFromFilename(fileData.name),
+					language: detectedLanguage,
+					languageOverride: null, // Par défaut en auto-détection
 				};
 
 				setTabs((prevTabs) => [
@@ -278,44 +279,33 @@ const ElectronLayout = () => {
 				console.error(error);
 			});
 	};
-
-	const getLanguageFromFilename = (filename: string) => {
-		const ext = filename.split(".").pop()?.toLocaleLowerCase() || "";
-
-		const languageMap: Record<string, string> = {
-			js: "javascript",
-			jsx: "javascript",
-			ts: "typescript",
-			tsx: "typescript",
-			html: "html",
-			htm: "html",
-			css: "css",
-			scss: "scss",
-			sass: "scss",
-			json: "json",
-			md: "markdown",
-			py: "python",
-			rb: "ruby",
-			go: "go",
-			rs: "rust",
-			java: "java",
-			cpp: "cpp",
-			c: "c",
-			cs: "csharp",
-			php: "php",
-			swift: "swift",
-			kt: "kotlin",
-			xml: "xml",
-			yml: "yaml",
-			yaml: "yaml",
-		};
-
-		return languageMap[ext] || "plaintext";
-	};
-
 	const handleCursorPositionChange = (line: number, column: number) => {
 		setCursorPosition({ line, column });
 	};
+	const handleLanguageChange = (language: string) => {
+		if (!activeTab) return;
+
+		setTabs((prevTabs) =>
+			prevTabs.map((tab) => {
+				if (tab.id === activeTab) {
+					// Si l'option "auto" est sélectionnée, utilisez la détection automatique
+					const finalLanguage =
+						language === "auto"
+							? getLanguageFromFilename(tab.name)
+							: language;
+
+					return {
+						...tab,
+						language: finalLanguage,
+						// Conserver l'info que l'utilisateur a choisi "auto"
+						languageOverride: language === "auto" ? null : language,
+					};
+				}
+				return tab;
+			})
+		);
+	};
+
 	const handleUndo = () => {
 		if (
 			activeTab &&
@@ -449,7 +439,7 @@ const ElectronLayout = () => {
 						onRedo={handleRedo}
 					/>
 				</ResizablePanel>
-			</ResizablePanelGroup>
+			</ResizablePanelGroup>{" "}
 			<StatusBar
 				activeFile={
 					tabs.find((tab) => tab.id === activeTab)?.name || null
@@ -457,9 +447,13 @@ const ElectronLayout = () => {
 				language={
 					tabs.find((tab) => tab.id === activeTab)?.language || null
 				}
+				languageOverride={
+					tabs.find((tab) => tab.id === activeTab)?.languageOverride
+				}
 				cursorPosition={cursorPosition}
 				tabSize={2}
 				useTabs={false}
+				onLanguageChange={handleLanguageChange}
 			/>{" "}
 			{/* Boîte de dialogue de confirmation pour la fermeture d'onglet */}
 			<Dialog
@@ -473,19 +467,10 @@ const ElectronLayout = () => {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="py-3">
-						{isAppClosing ? (
-							"Des fichiers ont été modifiés. Voulez-vous enregistrer les modifications avant de fermer l'onglet ?"
-						) : (
-							<>
-								Le fichier{" "}
-								{
-									tabs.find((tab) => tab.id === tabToClose)
-										?.name
-								}{" "}
-								a été modifié. Voulez-vous enregistrer les
-								modifications avant de fermer l'onglet ?
-							</>
-						)}
+						Le fichier{" "}
+						{tabs.find((tab) => tab.id === tabToClose)?.name} a été
+						modifié. Voulez-vous enregistrer les modifications avant
+						de fermer l'onglet ?
 					</div>
 					<DialogFooter className="flex justify-between sm:justify-between">
 						<Button variant="outline" onClick={handleCancelClose}>

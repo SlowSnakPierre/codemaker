@@ -91,7 +91,8 @@ export function createTab(
 	name: string,
 	path: string | null,
 	content: string,
-	language: string
+	language: string,
+	languageOverride?: string | null
 ): FileTab {
 	return {
 		id,
@@ -99,7 +100,8 @@ export function createTab(
 		path,
 		content,
 		originalContent: content, // Stocker le contenu original
-		language,
+		language, // Langage détecté ou forcé
+		languageOverride, // null = auto-détection, string = langage forcé
 		active: false,
 		modified: false,
 	};

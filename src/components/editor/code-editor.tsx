@@ -98,16 +98,6 @@ export default function CodeEditor({
 		editor.focus();
 	};
 
-	useEffect(() => {
-		if (!editorRef.current) return;
-
-		if (resolvedTheme === "dark") {
-			editorRef.current.updateOptions({ theme: "vs-dark" });
-		} else {
-			editorRef.current.updateOptions({ theme: "vs" });
-		}
-	}, [resolvedTheme]);
-
 	const handleEditorWillMount = (monaco: Monaco) => {
 		monaco.editor.defineTheme("customDark", {
 			base: "vs-dark",
@@ -118,6 +108,16 @@ export default function CodeEditor({
 			},
 		});
 	};
+
+	useEffect(() => {
+		if (!editorRef.current) return;
+
+		if (resolvedTheme === "dark") {
+			editorRef.current.updateOptions({ theme: "vs-dark" });
+		} else {
+			editorRef.current.updateOptions({ theme: "vs" });
+		}
+	}, [resolvedTheme]);
 
 	useEffect(() => {
 		if (editorRef.current && isEditorReady) {

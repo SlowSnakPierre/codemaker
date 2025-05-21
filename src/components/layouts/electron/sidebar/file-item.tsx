@@ -8,7 +8,7 @@ interface FileItemProps {
 }
 
 export default function FileItem({ item, level, onFileSelect }: FileItemProps) {
-	const paddingLeft = level * 16 + 16;
+	const paddingLeft = level * 16 + 4;
 	return (
 		<div
 			key={item.path}

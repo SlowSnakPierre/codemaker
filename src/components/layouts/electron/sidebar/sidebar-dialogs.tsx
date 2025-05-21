@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import React from "react";
+import { toast } from "sonner";
 
 type Props = {
 	isLoading: boolean;
@@ -17,12 +18,13 @@ type Props = {
 	isCreatingFolder: boolean;
 	newFileName: string;
 	newFolderName: string;
+	selectedFolder: string | null;
+	setIsLoading: (b: boolean) => void;
+	refreshFolder: (b: string) => void;
 	setIsCreatingFile: (b: boolean) => void;
 	setIsCreatingFolder: (b: boolean) => void;
 	setNewFileName: (name: string) => void;
 	setNewFolderName: (name: string) => void;
-	handleCreateFile: () => void;
-	handleCreateFolder: () => void;
 };
 
 const SidebarDialogs = ({
@@ -31,13 +33,72 @@ const SidebarDialogs = ({
 	isCreatingFolder,
 	newFileName,
 	newFolderName,
+	selectedFolder,
+	setIsLoading,
+	refreshFolder,
 	setIsCreatingFile,
 	setIsCreatingFolder,
 	setNewFileName,
 	setNewFolderName,
-	handleCreateFile,
-	handleCreateFolder,
 }: Props) => {
+	const isElectron = typeof window !== "undefined" && window.electron;
+
+	const handleCreateFile = async () => {
+		if (!selectedFolder || !isElectron || !newFileName.trim()) return;
+
+		setIsLoading(true);
+		try {
+			const result = await window.electron.createFile({
+				dirPath: selectedFolder,
+				fileName: newFileName.trim(),
+			});
+
+			if (result.success) {
+				refreshFolder(selectedFolder);
+				toast.success(`Fichier "${newFileName}" créé avec succès`);
+				setNewFileName("");
+				setIsCreatingFile(false);
+			} else {
+				toast.error(
+					`Erreur lors de la création du fichier: ${result.message}`
+				);
+			}
+		} catch (error) {
+			console.error("Échec de création du fichier:", error);
+			toast.error("Impossible de créer le fichier");
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleCreateFolder = async () => {
+		if (!selectedFolder || !isElectron || !newFolderName.trim()) return;
+
+		setIsLoading(true);
+		try {
+			const result = await window.electron.createDirectory({
+				dirPath: selectedFolder,
+				folderName: newFolderName.trim(),
+			});
+
+			if (result.success) {
+				refreshFolder(selectedFolder);
+				toast.success(`Dossier "${newFolderName}" créé avec succès`);
+				setNewFolderName("");
+				setIsCreatingFolder(false);
+			} else {
+				toast.error(
+					`Erreur lors de la création du dossier: ${result.message}`
+				);
+			}
+		} catch (error) {
+			console.error("Échec de création du dossier:", error);
+			toast.error("Impossible de créer le dossier");
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
 	return (
 		<>
 			<Dialog open={isCreatingFile} onOpenChange={setIsCreatingFile}>

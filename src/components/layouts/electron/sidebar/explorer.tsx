@@ -1,5 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import React, { Dispatch, SetStateAction } from "react";
+import React, { Dispatch, SetStateAction, useEffect } from "react";
 import FolderItem from "./folder-item";
 import FileItem from "./file-item";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ const Explorer = ({
 	refreshFolder,
 	onFileSelect,
 	onDirectoryOpen,
-	updateFilesWithChildren,
 }: {
 	currentDirectory: string | null;
 	files: FileData[];
@@ -36,36 +35,107 @@ const Explorer = ({
 	onFileSelect: (file: FileData) => void;
 	onDirectoryOpen: () => void;
 	closeDirectory: () => void;
-	updateFilesWithChildren: (
-		files: FileData[],
-		path: string,
-		contents: FileData[]
-	) => FileData[];
 }) => {
 	const isElectron = typeof window !== "undefined" && window.electron;
 
-	const handleFolderClick = async (path: string) => {
-		if (!expandedFolders[path] && isElectron) {
-			setIsLoading(true);
-			try {
-				const contents = await window.electron.readDirectory(path);
-				if (!contents) throw new Error("Aucun contenu trouvé");
+	useEffect(() => {
+		if (isElectron && files.length > 0) {
+			loadAllExpandedFolders(files, expandedFolders);
+		}
+	}, [expandedFolders, isElectron]);
 
-				setFiles((prevFiles) => {
-					return updateFilesWithChildren(prevFiles, path, contents);
-				});
-			} catch (error) {
-				console.error("Échec de lecture du répertoire:", error);
-				toast.error("Impossible de lire le contenu du dossier");
-			} finally {
-				setIsLoading(false);
+	const loadAllExpandedFolders = async (
+		fileList: FileData[],
+		expanded: Record<string, boolean>
+	) => {
+		let hasUpdates = false;
+		const updatedFiles = [...fileList];
+
+		const processFolder = async (items: FileData[]) => {
+			for (let i = 0; i < items.length; i++) {
+				const item = items[i];
+
+				if (item.isDirectory && expanded[item.path]) {
+					if (!item.children || item.children.length === 0) {
+						try {
+							const contents =
+								await window.electron.readDirectory(item.path);
+							if (contents) {
+								hasUpdates = true;
+								items[i] = { ...item, children: contents };
+
+								await processFolder(contents);
+							}
+						} catch (error) {
+							console.error(
+								`Échec de chargement pour ${item.path}:`,
+								error
+							);
+						}
+					} else if (item.children) {
+						await processFolder(item.children);
+					}
+				}
+			}
+		};
+
+		await processFolder(updatedFiles);
+
+		if (hasUpdates) {
+			setFiles([...updatedFiles]);
+		}
+	};
+
+	const handleFolderClick = async (path: string) => {
+		if (isElectron) {
+			if (!expandedFolders[path]) {
+				setIsLoading(true);
+				try {
+					const contents = await window.electron.readDirectory(path);
+					if (!contents) throw new Error("Aucun contenu trouvé");
+
+					setFiles((prevFiles) => {
+						return updateFilesWithChildren(
+							prevFiles,
+							path,
+							contents
+						);
+					});
+				} catch (error) {
+					console.error("Échec de lecture du répertoire:", error);
+					toast.error("Impossible de lire le contenu du dossier");
+				} finally {
+					setIsLoading(false);
+				}
 			}
 		}
 		toggleFolder(path);
 	};
 
+	const updateFilesWithChildren = (
+		files: FileData[],
+		targetPath: string,
+		children: FileData[]
+	): FileData[] => {
+		return files.map((file) => {
+			if (file.path === targetPath) {
+				return { ...file, children };
+			} else if (file.children) {
+				return {
+					...file,
+					children: updateFilesWithChildren(
+						file.children,
+						targetPath,
+						children
+					),
+				};
+			}
+			return file;
+		});
+	};
+
 	return (
-		<ScrollArea className="flex-grow">
+		<ScrollArea className="flex h-full flex-col">
 			{currentDirectory ? (
 				<div className="p-1 relative file-explorer">
 					{files.length > 0 ? (
