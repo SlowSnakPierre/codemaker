@@ -5,6 +5,35 @@ declare global {
 	}
 }
 
+export interface FileChangeEvent {
+	type: "add" | "unlink" | "addDir" | "unlinkDir";
+	path: string;
+}
+
+export interface CreateFileResult {
+	success: boolean;
+	message?: string;
+	file?: FileData;
+}
+
+export interface CreateDirectoryResult {
+	success: boolean;
+	message?: string;
+	directory?: FileData;
+}
+
+export interface FileTypeResult {
+	success: boolean;
+	message?: string;
+	extension?: string;
+}
+
+export interface RefreshDirectoryResult {
+	success: boolean;
+	message?: string;
+	files?: ReadDirectory[];
+}
+
 export interface ElectronAPI {
 	openDirectory: () => Promise<string | null>;
 	openFile: () => Promise<ReadFile | null>;
@@ -13,6 +42,17 @@ export interface ElectronAPI {
 	readDirectory: (dirPath: string) => Promise<ReadDirectory[] | null>;
 	readFile: (filePath: string) => Promise<string | null>;
 	writeFile: (params: ReadFile) => Promise<boolean>;
+	createFile: (params: {
+		dirPath: string;
+		fileName: string;
+	}) => Promise<CreateFileResult>;
+	createDirectory: (params: {
+		dirPath: string;
+		folderName: string;
+	}) => Promise<CreateDirectoryResult>;
+	getFileType: (filePath: string) => Promise<FileTypeResult>;
+	refreshDirectory: (dirPath: string) => Promise<RefreshDirectoryResult>;
+
 	minimizeWindow: () => Promise<void>;
 	maximizeWindow: () => Promise<boolean>;
 	closeWindow: () => Promise<void>;
@@ -22,6 +62,9 @@ export interface ElectronAPI {
 		key: string;
 		value: any;
 	}) => Promise<true | null>;
+
+	on: (channel: string, callback: (data: any) => void) => void;
+	off: (channel: string) => void;
 }
 
 export interface ReadFile {

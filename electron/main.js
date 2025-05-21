@@ -4,6 +4,7 @@ import * as path from "path";
 import Store from "electron-store";
 import isDev from "electron-is-dev";
 import { fileURLToPath } from "url";
+import chokidar from "chokidar";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,7 +12,49 @@ const __dirname = path.dirname(__filename);
 const store = new Store();
 
 let mainWindow;
+let fileWatcher;
 
+// Fonction pour démarrer le watcher sur le répertoire
+function startWatcher(directory) {
+	// Si un watcher existe déjà, on le ferme
+	if (fileWatcher) {
+		fileWatcher.close();
+	}
+
+	// Créer un nouveau watcher
+	fileWatcher = chokidar.watch(directory, {
+		ignored: /(^|[\/\\])\../, // ignore les fichiers cachés
+		persistent: true,
+		ignoreInitial: true,
+		depth: 0, // Limite la surveillance au niveau supérieur du dossier
+	});
+
+	// Événements à surveiller
+	fileWatcher
+		.on("add", (path) =>
+			mainWindow.webContents.send("fs:fileChanged", { type: "add", path })
+		)
+		.on("unlink", (path) =>
+			mainWindow.webContents.send("fs:fileChanged", {
+				type: "unlink",
+				path,
+			})
+		)
+		.on("addDir", (path) =>
+			mainWindow.webContents.send("fs:fileChanged", {
+				type: "addDir",
+				path,
+			})
+		)
+		.on("unlinkDir", (path) =>
+			mainWindow.webContents.send("fs:fileChanged", {
+				type: "unlinkDir",
+				path,
+			})
+		);
+}
+
+// Créer une nouvelle fenêtre
 function createWindow() {
 	mainWindow = new BrowserWindow({
 		width: 1200,
@@ -63,7 +106,10 @@ ipcMain.handle("dialog:openDirectory", async () => {
 	if (canceled) {
 		return null;
 	} else {
-		return filePaths[0];
+		const selectedDir = filePaths[0];
+		// Démarrer le watcher sur le répertoire sélectionné
+		startWatcher(selectedDir);
+		return selectedDir;
 	}
 });
 
@@ -140,6 +186,83 @@ ipcMain.handle("fs:readFile", async (event, filePath) => {
 ipcMain.handle("fs:writeFile", async (event, { filePath, content }) => {
 	fs.writeFileSync(filePath, content, "utf8");
 	return true;
+});
+
+ipcMain.handle("fs:createFile", async (event, { dirPath, fileName }) => {
+	const filePath = path.join(dirPath, fileName);
+	try {
+		// Vérifie si le fichier existe déjà
+		if (fs.existsSync(filePath)) {
+			return { success: false, message: "Le fichier existe déjà" };
+		}
+
+		// Créer le fichier avec un contenu vide
+		fs.writeFileSync(filePath, "", "utf8");
+		return {
+			success: true,
+			file: {
+				name: fileName,
+				path: filePath,
+				isDirectory: false,
+			},
+		};
+	} catch (error) {
+		return { success: false, message: error.message };
+	}
+});
+
+ipcMain.handle("fs:createDirectory", async (event, { dirPath, folderName }) => {
+	const newDirPath = path.join(dirPath, folderName);
+	try {
+		// Vérifie si le dossier existe déjà
+		if (fs.existsSync(newDirPath)) {
+			return { success: false, message: "Le dossier existe déjà" };
+		}
+
+		// Créer le dossier
+		fs.mkdirSync(newDirPath);
+		return {
+			success: true,
+			directory: {
+				name: folderName,
+				path: newDirPath,
+				isDirectory: true,
+			},
+		};
+	} catch (error) {
+		return { success: false, message: error.message };
+	}
+});
+
+ipcMain.handle("fs:getFileType", async (event, filePath) => {
+	try {
+		const extension = path.extname(filePath).toLowerCase();
+		return { success: true, extension };
+	} catch (error) {
+		return { success: false, message: error.message };
+	}
+});
+
+ipcMain.handle("fs:refreshDirectory", async (event, dirPath) => {
+	try {
+		const items = fs.readdirSync(dirPath, { withFileTypes: true });
+		const result = items.map((item) => ({
+			name: item.name,
+			path: path.join(dirPath, item.name),
+			isDirectory: item.isDirectory(),
+		}));
+
+		return {
+			success: true,
+			files: result.sort((a, b) => {
+				if (a.isDirectory && !b.isDirectory) return -1;
+				if (!a.isDirectory && b.isDirectory) return 1;
+				return a.name.localeCompare(b.name);
+			}),
+		};
+	} catch (error) {
+		return { success: false, message: error.message };
+	}
 });
 
 ipcMain.handle("window:minimize", () => {

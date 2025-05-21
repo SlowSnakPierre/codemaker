@@ -4,7 +4,11 @@ import React, { useEffect, useState } from "react";
 import TitleBar from "./title-bar";
 import { FileData, FileTab } from "@/lib/types";
 import EditorPanel from "@/components/editor/editor-panel";
-import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import {
+	ResizableHandle,
+	ResizablePanel,
+	ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { toast } from "sonner";
 import Sidebar from "./sidebar";
 import StatusBar from "./status-bar";
@@ -407,8 +411,8 @@ const ElectronLayout = () => {
 			<ResizablePanelGroup direction="horizontal" className="flex-grow">
 				{!sidebarCollapsed && (
 					<ResizablePanel
-						defaultSize={20}
-						minSize={15}
+						defaultSize={15}
+						minSize={12.5}
 						maxSize={30}
 						className="bg-card border-r border-border"
 					>
@@ -419,6 +423,7 @@ const ElectronLayout = () => {
 						/>
 					</ResizablePanel>
 				)}
+				<ResizableHandle />
 				<ResizablePanel defaultSize={80} minSize={30}>
 					<EditorPanel
 						tabs={tabs}
