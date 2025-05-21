@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const store = new Store();
-
+aaa
 let mainWindow;
 function createWindow() {
 	mainWindow = new BrowserWindow({

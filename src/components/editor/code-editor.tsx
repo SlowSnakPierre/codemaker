@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Editor, { Monaco, OnMount } from "@monaco-editor/react";
 import { editor } from "monaco-editor";
 import { useTheme } from "next-themes";
@@ -12,6 +12,8 @@ interface CodeEditorProps {
 	onChange: (value: string) => void;
 	onSave: () => void;
 	onCursorPositionChange: (line: number, column: number) => void;
+	onUndo?: () => void;
+	onRedo?: () => void;
 }
 
 export default function CodeEditor({
@@ -20,21 +22,58 @@ export default function CodeEditor({
 	onChange,
 	onSave,
 	onCursorPositionChange,
+	onUndo,
+	onRedo,
 }: CodeEditorProps) {
 	const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 	const [isEditorReady, setIsEditorReady] = useState(false);
 	const contentRef = useRef<string>(content);
 	const { theme } = useTheme();
+	// Fonction pour annuler la dernière modification
+	const handleUndo = useCallback(() => {
+		if (editorRef.current) {
+			editorRef.current.trigger("keyboard", "undo", null);
+			// Appel du callback externe si défini
+			if (onUndo) onUndo();
+		}
+	}, [onUndo]);
+
+	// Fonction pour rétablir la dernière modification annulée
+	const handleRedo = useCallback(() => {
+		if (editorRef.current) {
+			editorRef.current.trigger("keyboard", "redo", null);
+			// Appel du callback externe si défini
+			if (onRedo) onRedo();
+		}
+	}, [onRedo]);
 
 	const handleEditorDidMount: OnMount = (editor, monaco) => {
 		editorRef.current = editor;
 		setIsEditorReady(true);
 		contentRef.current = content;
 
+		// Expose l'instance de l'éditeur pour les fonctions externes (comme les boutons de la barre de titre)
+		if (typeof window !== "undefined") {
+			(window as any).__MONACO_EDITOR_INSTANCE__ = editor;
+		}
+
 		// Register save command
 		editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
 			onSave();
 		});
+
+		// Register undo command
+		editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyZ, () => {
+			editor.trigger("keyboard", "undo", null);
+		});
+
+		// Register redo command
+		editor.addCommand(
+			monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyZ,
+			() => {
+				editor.trigger("keyboard", "redo", null);
+			}
+		);
 
 		// Track cursor position
 		editor.onDidChangeCursorPosition((e) => {
@@ -65,13 +104,13 @@ export default function CodeEditor({
 	// Configure Monaco before mounting
 	const handleEditorWillMount = (monaco: Monaco) => {
 		// Configure Monaco editor here if needed
-		monaco.editor.defineTheme('customDark', {
-			base: 'vs-dark',
+		monaco.editor.defineTheme("customDark", {
+			base: "vs-dark",
 			inherit: true,
 			rules: [],
 			colors: {
-				'editor.background': '#1a1a1a',
-			}
+				"editor.background": "#1a1a1a",
+			},
 		});
 	};
 
@@ -83,11 +122,11 @@ export default function CodeEditor({
 				// Save current cursor position and selection
 				const position = editorRef.current.getPosition();
 				const selection = editorRef.current.getSelection();
-				
+
 				// Update content
 				editorRef.current.setValue(content);
 				contentRef.current = content;
-				
+
 				// Restore cursor position and selection
 				if (position) {
 					editorRef.current.setPosition(position);
@@ -98,19 +137,43 @@ export default function CodeEditor({
 			}
 		}
 	}, [content, isEditorReady]);
-
 	// Handle keyboard shortcuts globally
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+			// Save shortcut (Ctrl+S / Cmd+S)
+			if ((e.metaKey || e.ctrlKey) && e.key === "s") {
 				e.preventDefault();
 				onSave();
 			}
+
+			// Undo shortcut (Ctrl+Z / Cmd+Z)
+			if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === "z") {
+				e.preventDefault();
+				handleUndo();
+			}
+
+			// Redo shortcut (Ctrl+Shift+Z / Cmd+Shift+Z)
+			if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "z") {
+				e.preventDefault();
+				handleRedo();
+			}
 		};
 
-		window.addEventListener('keydown', handleKeyDown);
-		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [onSave]);
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [onSave, handleUndo, handleRedo]);
+
+	// Nettoyer la référence globale lorsque le composant est démonté
+	useEffect(() => {
+		return () => {
+			if (
+				typeof window !== "undefined" &&
+				(window as any).__MONACO_EDITOR_INSTANCE__
+			) {
+				(window as any).__MONACO_EDITOR_INSTANCE__ = null;
+			}
+		};
+	}, []);
 
 	return (
 		<Editor
@@ -130,6 +193,7 @@ export default function CodeEditor({
 				renderLineHighlight: "all",
 				rulers: [],
 				lightbulb: {
+					// @ts-expect-error No type definition for this property
 					enabled: true,
 				},
 				suggestOnTriggerCharacters: true,
@@ -142,7 +206,7 @@ export default function CodeEditor({
 				},
 				tabSize: 2,
 				wordWrap: "on",
-				wordBasedSuggestions: "on",
+				wordBasedSuggestions: "currentDocument",
 				autoIndent: "advanced",
 				formatOnPaste: true,
 				smoothScrolling: true,
@@ -165,6 +229,8 @@ export default function CodeEditor({
 					autoFindInSelection: "never",
 					seedSearchStringFromSelection: "always",
 				},
+				// Paramètres d'annulation/rétablissement
+				undoLimit: 100, // Nombre maximum d'opérations d'annulation à conserver
 			}}
 		/>
 	);

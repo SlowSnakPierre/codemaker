@@ -38,6 +38,8 @@ type Props = {
 	onOpenDirectory: () => void;
 	onSaveFile: () => void;
 	onToggleSidebar: () => void;
+	onUndo?: () => void;
+	onRedo?: () => void;
 };
 
 const TitleBar = ({
@@ -46,6 +48,8 @@ const TitleBar = ({
 	onOpenDirectory,
 	onSaveFile,
 	onToggleSidebar,
+	onUndo,
+	onRedo,
 }: Props) => {
 	const [isMaximized, setIsMaximized] = useState(false);
 	const { theme, setTheme } = useTheme();
@@ -156,7 +160,7 @@ const TitleBar = ({
 							Édition
 						</MenubarTrigger>
 						<MenubarContent>
-							<MenubarItem>
+							<MenubarItem onClick={onUndo}>
 								Annuler{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
@@ -164,7 +168,7 @@ const TitleBar = ({
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
-							<MenubarItem>
+							<MenubarItem onClick={onRedo}>
 								Rétablir{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
@@ -320,6 +324,7 @@ const TitleBar = ({
 									variant={"ghost"}
 									size={"icon"}
 									className="h-7 w-7"
+									onClick={onUndo}
 								>
 									<ArrowLeft className="h-4 w-4 text-gray-600 dark:text-muted-foreground" />
 								</Button>
@@ -336,6 +341,7 @@ const TitleBar = ({
 									variant={"ghost"}
 									size={"icon"}
 									className="h-7 w-7"
+									onClick={onRedo}
 								>
 									<ArrowRight className="h-4 w-4 text-gray-600 dark:text-muted-foreground" />
 								</Button>

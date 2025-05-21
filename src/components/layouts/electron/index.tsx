@@ -271,12 +271,40 @@ const ElectronLayout = () => {
 
 	const handleCursorPositionChange = (line: number, column: number) => {
 		setCursorPosition({ line, column });
+	}; // Fonctions pour gérer les actions undo/redo
+	const handleUndo = () => {
+		if (
+			activeTab &&
+			typeof window !== "undefined" &&
+			(window as any).__MONACO_EDITOR_INSTANCE__
+		) {
+			// Utiliser la référence globale à l'éditeur Monaco
+			(window as any).__MONACO_EDITOR_INSTANCE__.trigger(
+				"keyboard",
+				"undo",
+				null
+			);
+		}
+	};
+
+	const handleRedo = () => {
+		if (
+			activeTab &&
+			typeof window !== "undefined" &&
+			(window as any).__MONACO_EDITOR_INSTANCE__
+		) {
+			// Utiliser la référence globale à l'éditeur Monaco
+			(window as any).__MONACO_EDITOR_INSTANCE__.trigger(
+				"keyboard",
+				"redo",
+				null
+			);
+		}
 	};
 
 	if (!isClient) {
 		return null;
 	}
-
 	return (
 		<div className="flex flex-col h-screen overflow-hidden">
 			<TitleBar
@@ -285,8 +313,9 @@ const ElectronLayout = () => {
 				onOpenDirectory={handleDirectoryOpen}
 				onSaveFile={() => activeTab && handleFileSave(activeTab)}
 				onToggleSidebar={toggleSidebar}
+				onUndo={handleUndo}
+				onRedo={handleRedo}
 			/>
-
 			<ResizablePanelGroup direction="horizontal" className="flex-grow">
 				{!sidebarCollapsed && (
 					<ResizablePanel
@@ -311,10 +340,11 @@ const ElectronLayout = () => {
 						onContentChange={handleContentChange}
 						onSaveFile={handleFileSave}
 						onCursorPositionChange={handleCursorPositionChange}
+						onUndo={handleUndo}
+						onRedo={handleRedo}
 					/>
 				</ResizablePanel>
 			</ResizablePanelGroup>
-
 			<StatusBar
 				activeFile={
 					tabs.find((tab) => tab.id === activeTab)?.name || null
@@ -323,6 +353,8 @@ const ElectronLayout = () => {
 					tabs.find((tab) => tab.id === activeTab)?.language || null
 				}
 				cursorPosition={cursorPosition}
+				tabSize={2}
+				useTabs={false}
 			/>
 		</div>
 	);

@@ -16,6 +16,8 @@ interface EditorPanelProps {
 	onContentChange: (tabId: string, content: string) => void;
 	onSaveFile: (tabId: string) => void;
 	onCursorPositionChange: (line: number, column: number) => void;
+	onUndo?: () => void;
+	onRedo?: () => void;
 }
 
 export default function EditorPanel({
@@ -26,9 +28,14 @@ export default function EditorPanel({
 	onContentChange,
 	onSaveFile,
 	onCursorPositionChange,
+	onUndo,
+	onRedo,
 }: EditorPanelProps) {
 	const tabsRef = useRef<HTMLDivElement>(null);
-	const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+	const [cursorPosition, setCursorPosition] = useState({
+		line: 1,
+		column: 1,
+	});
 	const isElectron = typeof window !== "undefined" && window.electron;
 
 	// Handle keyboard shortcuts
@@ -42,7 +49,7 @@ export default function EditorPanel({
 					toast.success("File saved successfully");
 				}
 			}
-			
+
 			// Close tab with Cmd/Ctrl+W
 			if ((e.metaKey || e.ctrlKey) && e.key === "w") {
 				e.preventDefault();
@@ -78,8 +85,23 @@ export default function EditorPanel({
 		onCursorPositionChange(line, column);
 	};
 
+	// Fonctions pour annuler et rétablir
+	const handleUndo = () => {
+		if (activeTabId) {
+			// Transmet l'action aux composants enfants via les callbacks
+			if (onUndo) onUndo();
+		}
+	};
+
+	const handleRedo = () => {
+		if (activeTabId) {
+			// Transmet l'action aux composants enfants via les callbacks
+			if (onRedo) onRedo();
+		}
+	};
+
 	// Find active tab
-	const activeTab = tabs.find(tab => tab.id === activeTabId);
+	const activeTab = tabs.find((tab) => tab.id === activeTabId);
 
 	return (
 		<div className="flex flex-col h-full">
@@ -141,7 +163,11 @@ export default function EditorPanel({
 										onContentChange(tab.id, value)
 									}
 									onSave={() => onSaveFile(tab.id)}
-									onCursorPositionChange={handleCursorPositionChange}
+									onCursorPositionChange={
+										handleCursorPositionChange
+									}
+									onUndo={onUndo}
+									onRedo={onRedo}
 								/>
 							</div>
 						))}
@@ -151,16 +177,21 @@ export default function EditorPanel({
 					<div className="h-6 border-t border-border bg-muted text-muted-foreground text-xs flex items-center px-4 justify-between">
 						<div className="flex items-center space-x-4">
 							<span>
-								Ln {cursorPosition.line}, Col {cursorPosition.column}
+								Ln {cursorPosition.line}, Col{" "}
+								{cursorPosition.column}
 							</span>
 							{activeTab && (
-								<span className="capitalize">{activeTab.language}</span>
+								<span className="capitalize">
+									{activeTab.language}
+								</span>
 							)}
 						</div>
 						<div className="flex items-center">
 							{activeTab?.modified && (
-								<button 
-									onClick={() => activeTabId && onSaveFile(activeTabId)}
+								<button
+									onClick={() =>
+										activeTabId && onSaveFile(activeTabId)
+									}
 									className="flex items-center hover:text-foreground transition-colors"
 									title="Save file (Cmd+S)"
 								>
