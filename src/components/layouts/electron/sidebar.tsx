@@ -16,6 +16,8 @@ import {
 	FileCogIcon,
 	Code2Icon,
 	CogIcon,
+	SearchIcon,
+	MoreVerticalIcon,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -32,7 +34,6 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,26 +53,22 @@ export default function Sidebar({
 	onDirectoryOpen,
 }: SidebarProps) {
 	const [files, setFiles] = useState<FileData[]>([]);
-	const [expandedFolders, setExpandedFolders] = useState<
-		Record<string, boolean>
-	>({});
+	const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>(
+		{}
+	);
 	const [isCreatingFile, setIsCreatingFile] = useState<boolean>(false);
 	const [isCreatingFolder, setIsCreatingFolder] = useState<boolean>(false);
 	const [newFileName, setNewFileName] = useState<string>("");
 	const [newFolderName, setNewFolderName] = useState<string>("");
 	const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [searchQuery, setSearchQuery] = useState<string>("");
 
-	// Référence pour suivre si le composant est monté
 	const isMounted = useRef(true);
-
 	const isElectron = typeof window !== "undefined" && window.electron;
 
 	useEffect(() => {
-		// Configuration de l'état de montage
 		isMounted.current = true;
-
-		// Nettoyage au démontage
 		return () => {
 			isMounted.current = false;
 			if (isElectron) {
@@ -80,7 +77,6 @@ export default function Sidebar({
 		};
 	}, [isElectron]);
 
-	// Configurer l'écouteur de changements de fichiers
 	useEffect(() => {
 		if (isElectron && currentDirectory) {
 			window.electron.on("fs:fileChanged", handleFileChange);
@@ -93,7 +89,6 @@ export default function Sidebar({
 		};
 	}, [isElectron, currentDirectory, files]);
 
-	// Charger le contenu du répertoire initial
 	useEffect(() => {
 		if (currentDirectory && isElectron) {
 			setIsLoading(true);
@@ -105,20 +100,12 @@ export default function Sidebar({
 		}
 	}, [currentDirectory, isElectron]);
 
-	// Gérer les changements de fichiers (ajout, suppression, etc.)
 	const handleFileChange = async (event: FileChangeEvent) => {
 		if (!currentDirectory) return;
-
-		// Si le chemin n'est pas dans le répertoire courant, ignorer
 		if (!event.path.startsWith(currentDirectory)) return;
 
-		// Déterminer le répertoire parent du fichier modifié
-		const dirPath = event.path
-			.split(/[\/\\]/)
-			.slice(0, -1)
-			.join("/");
+		const dirPath = event.path.split(/[\/\\]/).slice(0, -1).join("/");
 
-		// Rafraîchir le répertoire parent
 		if (isElectron) {
 			const result = await window.electron.refreshDirectory(dirPath);
 			if (result.success) {
@@ -127,25 +114,17 @@ export default function Sidebar({
 		}
 	};
 
-	// Mettre à jour l'arborescence des fichiers avec de nouvelles données
 	const updateFilesTree = (dirPath: string, newContents: FileData[]) => {
-		// Si c'est le répertoire principal
 		if (dirPath === currentDirectory) {
 			setFiles(newContents);
 			return;
 		}
 
-		// Sinon, mettre à jour le sous-dossier spécifique
 		setFiles((prevFiles) => {
-			return updateNestedFilesWithChildren(
-				prevFiles,
-				dirPath,
-				newContents
-			);
+			return updateNestedFilesWithChildren(prevFiles, dirPath, newContents);
 		});
 	};
 
-	// Fonction récursive pour mettre à jour une arborescence imbriquée
 	const updateNestedFilesWithChildren = (
 		files: FileData[],
 		targetPath: string,
@@ -168,13 +147,12 @@ export default function Sidebar({
 		});
 	};
 
-	// Charger le contenu d'un répertoire
 	const loadDirectoryContents = async (dirPath: string) => {
 		try {
 			if (!isElectron) return;
 
 			const contents = await window.electron.readDirectory(dirPath);
-			if (!contents) throw new Error("Aucun contenu trouvé");
+			if (!contents) throw new Error("No content found");
 
 			if (dirPath === currentDirectory) {
 				setFiles(contents);
@@ -182,12 +160,11 @@ export default function Sidebar({
 
 			return contents;
 		} catch (error) {
-			console.error("Échec de lecture du répertoire:", error);
-			toast.error("Impossible de lire le contenu du dossier");
+			console.error("Failed to read directory:", error);
+			toast.error("Unable to read folder contents");
 		}
 	};
 
-	// Rafraîchir explicitement un dossier
 	const refreshFolder = async (path: string) => {
 		if (!isElectron) return;
 
@@ -196,21 +173,18 @@ export default function Sidebar({
 			const result = await window.electron.refreshDirectory(path);
 			if (result.success) {
 				updateFilesTree(path, result.files || []);
-				toast.success("Dossier rafraîchi avec succès");
+				toast.success("Folder refreshed successfully");
 			} else {
-				toast.error(
-					`Erreur lors du rafraîchissement: ${result.message}`
-				);
+				toast.error(`Refresh error: ${result.message}`);
 			}
 		} catch (error) {
-			console.error("Échec du rafraîchissement:", error);
-			toast.error("Impossible de rafraîchir le dossier");
+			console.error("Refresh failed:", error);
+			toast.error("Unable to refresh folder");
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
-	// Basculer l'état d'expansion d'un dossier
 	const toggleFolder = useCallback((path: string) => {
 		setExpandedFolders((prev) => {
 			const newState = { ...prev };
@@ -219,20 +193,19 @@ export default function Sidebar({
 		});
 	}, []);
 
-	// Gérer le clic sur un dossier
 	const handleFolderClick = async (path: string) => {
 		if (!expandedFolders[path] && isElectron) {
 			setIsLoading(true);
 			try {
 				const contents = await window.electron.readDirectory(path);
-				if (!contents) throw new Error("Aucun contenu trouvé");
+				if (!contents) throw new Error("No content found");
 
 				setFiles((prevFiles) => {
 					return updateFilesWithChildren(prevFiles, path, contents);
 				});
 			} catch (error) {
-				console.error("Échec de lecture du répertoire:", error);
-				toast.error("Impossible de lire le contenu du dossier");
+				console.error("Failed to read directory:", error);
+				toast.error("Unable to read folder contents");
 			} finally {
 				setIsLoading(false);
 			}
@@ -240,7 +213,6 @@ export default function Sidebar({
 		toggleFolder(path);
 	};
 
-	// Mettre à jour l'arborescence des fichiers avec les enfants
 	const updateFilesWithChildren = (
 		files: FileData[],
 		targetPath: string,
@@ -252,18 +224,13 @@ export default function Sidebar({
 			} else if (file.children) {
 				return {
 					...file,
-					children: updateFilesWithChildren(
-						file.children,
-						targetPath,
-						children
-					),
+					children: updateFilesWithChildren(file.children, targetPath, children),
 				};
 			}
 			return file;
 		});
 	};
 
-	// Créer un nouveau fichier
 	const handleCreateFile = async () => {
 		if (!selectedFolder || !isElectron || !newFileName.trim()) return;
 
@@ -275,25 +242,21 @@ export default function Sidebar({
 			});
 
 			if (result.success) {
-				// Mettre à jour l'arborescence avec le nouveau fichier
 				refreshFolder(selectedFolder);
-				toast.success(`Fichier "${newFileName}" créé avec succès`);
+				toast.success(`File "${newFileName}" created successfully`);
 				setNewFileName("");
 				setIsCreatingFile(false);
 			} else {
-				toast.error(
-					`Erreur lors de la création du fichier: ${result.message}`
-				);
+				toast.error(`Error creating file: ${result.message}`);
 			}
 		} catch (error) {
-			console.error("Échec de création du fichier:", error);
-			toast.error("Impossible de créer le fichier");
+			console.error("Failed to create file:", error);
+			toast.error("Unable to create file");
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
-	// Créer un nouveau dossier
 	const handleCreateFolder = async () => {
 		if (!selectedFolder || !isElectron || !newFolderName.trim()) return;
 
@@ -305,25 +268,21 @@ export default function Sidebar({
 			});
 
 			if (result.success) {
-				// Mettre à jour l'arborescence avec le nouveau dossier
 				refreshFolder(selectedFolder);
-				toast.success(`Dossier "${newFolderName}" créé avec succès`);
+				toast.success(`Folder "${newFolderName}" created successfully`);
 				setNewFolderName("");
 				setIsCreatingFolder(false);
 			} else {
-				toast.error(
-					`Erreur lors de la création du dossier: ${result.message}`
-				);
+				toast.error(`Error creating folder: ${result.message}`);
 			}
 		} catch (error) {
-			console.error("Échec de création du dossier:", error);
-			toast.error("Impossible de créer le dossier");
+			console.error("Failed to create folder:", error);
+			toast.error("Unable to create folder");
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
-	// Choisir l'icône appropriée pour un fichier
 	const renderFileIcon = (fileName: string) => {
 		const iconType = getFileIcon(fileName);
 		const iconColor = getFileIconColor(fileName);
@@ -346,47 +305,40 @@ export default function Sidebar({
 			default:
 				return <FileIcon className={`h-4 w-4 mr-2 ${iconColor}`} />;
 		}
-	}; // Rendre récursivement les éléments du dossier
+	};
+
+	const filteredFiles = (items: FileData[]): FileData[] => {
+		if (!searchQuery) return items;
+
+		return items.filter((item) => {
+			const matchesSearch = item.name
+				.toLowerCase()
+				.includes(searchQuery.toLowerCase());
+
+			if (item.isDirectory && item.children) {
+				const filteredChildren = filteredFiles(item.children);
+				return matchesSearch || filteredChildren.length > 0;
+			}
+
+			return matchesSearch;
+		});
+	};
+
 	const renderFolderItems = (items: FileData[], level = 0) => {
-		return items.map((item) => {
+		const filteredItems = filteredFiles(items);
+
+		return filteredItems.map((item) => {
 			const isExpanded = expandedFolders[item.path] || false;
-			const paddingLeft = level * 16; // Fonction pour rendre les barres d'indentation
-			const renderIndentationBars = (isLast: boolean = false) => {
-				const bars = [];
-				for (let i = 0; i < level; i++) {
-					const isLastBar = i === level - 1;
-					// Couleur plus claire pour la dernière barre, plus foncée pour les autres
-					const borderColor = isLastBar
-						? "border-gray-200 dark:border-gray-700"
-						: "border-gray-300 dark:border-gray-800";
-					bars.push(
-						<div
-							key={i}
-							className={`absolute h-full w-px ${borderColor} left-[${
-								i * 16 + 8
-							}px] top-0`}
-							style={{
-								left: `${i * 16 + 8}px`,
-								width: "1px",
-								background: isLastBar ? undefined : undefined,
-							}}
-						></div>
-					);
-				}
-				return bars;
-			};
+			const paddingLeft = level * 12;
 
 			if (item.isDirectory) {
 				return (
 					<div key={item.path} className="folder-container relative">
-						{level > 0 && renderIndentationBars()}
-						{/* Nous supprimons également le connecteur horizontal pour les dossiers */}{" "}
 						<div
-							className="group flex items-center py-1 pl-4 pr-2 cursor-pointer hover:bg-muted relative"
+							className="group flex items-center py-1 pl-4 pr-2 cursor-pointer hover:bg-accent/50 relative"
 							onClick={() => handleFolderClick(item.path)}
 							style={{ paddingLeft: `${paddingLeft}px` }}
 						>
-							{" "}
 							<span className="text-muted-foreground">
 								{isExpanded ? (
 									<ChevronDownIcon className="h-4 w-4" />
@@ -394,19 +346,13 @@ export default function Sidebar({
 									<ChevronRightIcon className="h-4 w-4" />
 								)}
 							</span>
-							<span className="text-sm truncate flex-grow ml-2 text-yellow-400">
-								{item.name}
-							</span>
-							{/* Actions du dossier (visible au survol) */}
-							<div className="opacity-0 group-hover:opacity-100 absolute right-2 bg-background">
+							<FolderIcon className="h-4 w-4 ml-1 mr-2 text-yellow-400" />
+							<span className="text-sm truncate flex-grow">{item.name}</span>
+							<div className="opacity-0 group-hover:opacity-100 absolute right-2 bg-background flex">
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											className="h-6 w-6"
-										>
-											<PlusIcon className="h-3 w-3" />
+										<Button variant="ghost" size="icon" className="h-6 w-6">
+											<MoreVerticalIcon className="h-3.5 w-3.5" />
 										</Button>
 									</DropdownMenuTrigger>
 									<DropdownMenuContent align="end">
@@ -418,7 +364,7 @@ export default function Sidebar({
 											}}
 										>
 											<FilePlusIcon className="h-4 w-4 mr-2" />
-											Nouveau fichier
+											New File
 										</DropdownMenuItem>
 										<DropdownMenuItem
 											onClick={(e) => {
@@ -428,7 +374,7 @@ export default function Sidebar({
 											}}
 										>
 											<FolderPlusIcon className="h-4 w-4 mr-2" />
-											Nouveau dossier
+											New Folder
 										</DropdownMenuItem>
 									</DropdownMenuContent>
 								</DropdownMenu>
@@ -442,22 +388,12 @@ export default function Sidebar({
 										refreshFolder(item.path);
 									}}
 								>
-									<RefreshCwIcon className="h-3 w-3" />
+									<RefreshCwIcon className="h-3.5 w-3.5" />
 								</Button>
-							</div>{" "}
-						</div>{" "}
+							</div>
+						</div>
 						{isExpanded && item.children && (
 							<div className="pl-0 relative">
-								{" "}
-								{/* Ligne verticale qui connecte le dossier à ses enfants */}
-								<div
-									className="absolute border-l border-gray-300 dark:border-gray-700"
-									style={{
-										left: `${level * 16 + 8}px`,
-										top: "0",
-										bottom: "0",
-									}}
-								></div>
 								{renderFolderItems(item.children, level + 1)}
 							</div>
 						)}
@@ -467,12 +403,10 @@ export default function Sidebar({
 				return (
 					<div
 						key={item.path}
-						className="flex items-center py-1 pl-4 pr-2 cursor-pointer hover:bg-muted relative file-item"
+						className="flex items-center py-1 pl-4 pr-2 cursor-pointer hover:bg-accent/50 relative"
 						onClick={() => onFileSelect(item)}
 						style={{ paddingLeft: `${paddingLeft + 16}px` }}
 					>
-						{level > 0 && renderIndentationBars()}
-						{/* On n'affiche plus le connecteur horizontal pour les fichiers */}
 						{renderFileIcon(item.name)}
 						<span className="text-sm truncate">{item.name}</span>
 					</div>
@@ -480,74 +414,75 @@ export default function Sidebar({
 			}
 		});
 	};
+
 	return (
 		<div className="flex flex-col h-full select-none">
-			{/* Nous supprimons les styles CSS globaux qui ne sont plus nécessaires */}
-			<div className="p-2 border-b border-border flex items-center justify-between">
-				<h2 className="text-sm font-semibold">Explorateur</h2>
-
-				<div className="flex">
-					{currentDirectory && (
-						<Button
-							variant="ghost"
-							size="icon"
-							className="h-6 w-6 mr-1"
-							onClick={() => refreshFolder(currentDirectory)}
-							title="Rafraîchir"
-							disabled={isLoading}
-						>
-							<RefreshCwIcon
-								className={`h-4 w-4 ${
-									isLoading ? "animate-spin" : ""
-								}`}
-							/>
-						</Button>
-					)}
-					{currentDirectory && (
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									className="h-6 w-6 mr-1"
-									title="Créer nouveau"
-								>
-									<PlusIcon className="h-4 w-4" />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end">
-								<DropdownMenuItem
-									onClick={() => {
-										setSelectedFolder(currentDirectory);
-										setIsCreatingFile(true);
-									}}
-								>
-									<FilePlusIcon className="h-4 w-4 mr-2" />
-									Nouveau fichier
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onClick={() => {
-										setSelectedFolder(currentDirectory);
-										setIsCreatingFolder(true);
-									}}
-								>
-									<FolderPlusIcon className="h-4 w-4 mr-2" />
-									Nouveau dossier
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					)}{" "}
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-6 w-6"
-						onClick={onDirectoryOpen}
-						title="Ouvrir un dossier"
-					>
-						Ouvrir
-					</Button>
+			<div className="p-2 border-b border-border">
+				<div className="flex items-center justify-between mb-2">
+					<h2 className="text-sm font-semibold uppercase tracking-wider">
+						Explorer
+					</h2>
+					<div className="flex">
+						{currentDirectory && (
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-6 w-6 mr-1"
+								onClick={() => refreshFolder(currentDirectory)}
+								title="Refresh"
+								disabled={isLoading}
+							>
+								<RefreshCwIcon
+									className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+								/>
+							</Button>
+						)}
+						{currentDirectory && (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-6 w-6 mr-1"
+										title="New..."
+									>
+										<PlusIcon className="h-4 w-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem
+										onClick={() => {
+											setSelectedFolder(currentDirectory);
+											setIsCreatingFile(true);
+										}}
+									>
+										<FilePlusIcon className="h-4 w-4 mr-2" />
+										New File
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => {
+											setSelectedFolder(currentDirectory);
+											setIsCreatingFolder(true);
+										}}
+									>
+										<FolderPlusIcon className="h-4 w-4 mr-2" />
+										New Folder
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						)}
+					</div>
 				</div>
-			</div>{" "}
+				<div className="relative">
+					<SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+					<Input
+						className="pl-8 h-8"
+						placeholder="Search files..."
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+					/>
+				</div>
+			</div>
 			<ScrollArea className="flex-grow">
 				{currentDirectory ? (
 					<div className="p-1 relative file-explorer">
@@ -555,43 +490,36 @@ export default function Sidebar({
 							renderFolderItems(files)
 						) : (
 							<div className="py-2 px-2 text-sm text-muted-foreground">
-								{isLoading ? "Chargement..." : "Dossier vide"}
+								{isLoading ? "Loading..." : "Empty folder"}
 							</div>
 						)}
 					</div>
 				) : (
 					<div className="flex flex-col items-center justify-center h-full p-4 text-muted-foreground">
-						<p className="text-sm text-center mb-4">
-							Aucun dossier ouvert
-						</p>
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={onDirectoryOpen}
-						>
-							Ouvrir un dossier
+						<p className="text-sm text-center mb-4">No folder opened</p>
+						<Button variant="outline" size="sm" onClick={onDirectoryOpen}>
+							Open Folder
 						</Button>
 					</div>
 				)}
 			</ScrollArea>
-			{/* Dialog pour la création de fichier */}
+
 			<Dialog open={isCreatingFile} onOpenChange={setIsCreatingFile}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Créer un nouveau fichier</DialogTitle>
+						<DialogTitle>Create new file</DialogTitle>
 						<DialogDescription>
-							Entrez le nom du fichier à créer dans le dossier
-							sélectionné.
+							Enter the name of the file to create in the selected folder.
 						</DialogDescription>
 					</DialogHeader>
 
 					<div className="py-4">
-						<Label htmlFor="fileName">Nom du fichier</Label>
+						<Label htmlFor="fileName">File name</Label>
 						<Input
 							id="fileName"
 							value={newFileName}
 							onChange={(e) => setNewFileName(e.target.value)}
-							placeholder="exemple.txt"
+							placeholder="example.txt"
 							className="mt-2"
 							onKeyDown={(e) => {
 								if (e.key === "Enter") {
@@ -607,34 +535,32 @@ export default function Sidebar({
 							onClick={() => setIsCreatingFile(false)}
 							disabled={isLoading}
 						>
-							Annuler
+							Cancel
 						</Button>
 						<Button
 							onClick={handleCreateFile}
 							disabled={!newFileName.trim() || isLoading}
 						>
-							{isLoading ? "Création..." : "Créer"}
+							{isLoading ? "Creating..." : "Create"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-			{/* Dialog pour la création de dossier */}
+
 			<Dialog open={isCreatingFolder} onOpenChange={setIsCreatingFolder}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Créer un nouveau dossier</DialogTitle>
-						<DialogDescription>
-							Entrez le nom du dossier à créer.
-						</DialogDescription>
+						<DialogTitle>Create new folder</DialogTitle>
+						<DialogDescription>Enter the name of the folder.</DialogDescription>
 					</DialogHeader>
 
 					<div className="py-4">
-						<Label htmlFor="folderName">Nom du dossier</Label>
+						<Label htmlFor="folderName">Folder name</Label>
 						<Input
 							id="folderName"
 							value={newFolderName}
 							onChange={(e) => setNewFolderName(e.target.value)}
-							placeholder="nouveau-dossier"
+							placeholder="new-folder"
 							className="mt-2"
 							onKeyDown={(e) => {
 								if (e.key === "Enter") {
@@ -650,13 +576,13 @@ export default function Sidebar({
 							onClick={() => setIsCreatingFolder(false)}
 							disabled={isLoading}
 						>
-							Annuler
+							Cancel
 						</Button>
 						<Button
 							onClick={handleCreateFolder}
 							disabled={!newFolderName.trim() || isLoading}
 						>
-							{isLoading ? "Création..." : "Créer"}
+							{isLoading ? "Creating..." : "Create"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
