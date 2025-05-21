@@ -48,6 +48,7 @@ export interface FileTab {
 	name: string;
 	path: string | null;
 	content: string;
+	originalContent?: string; // Contenu original du fichier pour comparer après les opérations d'annulation
 	language: string;
 	active?: boolean;
 	modified?: boolean;

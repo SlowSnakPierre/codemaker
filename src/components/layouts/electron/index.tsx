@@ -8,6 +8,14 @@ import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { toast } from "sonner";
 import Sidebar from "./sidebar";
 import StatusBar from "./status-bar";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const ElectronLayout = () => {
 	const [isClient, setIsClient] = useState(false);
@@ -21,6 +29,8 @@ const ElectronLayout = () => {
 		line: 1,
 		column: 1,
 	});
+	// États pour la popup de confirmation de fermeture d'onglet	const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+	const [tabToClose, setTabToClose] = useState<string | null>(null);
 
 	const isElectron = typeof window !== "undefined" && window.electron;
 
@@ -145,6 +155,7 @@ const ElectronLayout = () => {
 									path: savedPath,
 									name: fileName || "Untitled",
 									modified: false,
+									originalContent: t.content, // Mettre à jour le contenu original après la sauvegarde
 							  }
 							: t
 					)
@@ -166,8 +177,23 @@ const ElectronLayout = () => {
 			}))
 		);
 	};
-
 	const handleTabClose = async (tabId: string) => {
+		const tabToClose = tabs.find((tab) => tab.id === tabId);
+
+		// Vérifier si le fichier a été modifié
+		if (tabToClose?.modified) {
+			// Ouvrir la boîte de dialogue de confirmation
+			setTabToClose(tabId);
+			setIsCloseDialogOpen(true);
+			return;
+		}
+
+		// Si le fichier n'a pas été modifié, fermer l'onglet directement
+		closeTab(tabId);
+	};
+
+	// Fonction pour fermer effectivement l'onglet
+	const closeTab = (tabId: string) => {
 		const isActiveTab = tabs.find((tab) => tab.id === tabId)?.active;
 
 		setTabs((prevTabs) => {
@@ -187,14 +213,21 @@ const ElectronLayout = () => {
 			return filtered;
 		});
 	};
-
 	const handleContentChange = async (tabId: string, newContent: string) => {
 		setTabs((prevTabs) =>
-			prevTabs.map((tab) =>
-				tab.id === tabId
-					? { ...tab, content: newContent, modified: true }
-					: tab
-			)
+			prevTabs.map((tab) => {
+				if (tab.id === tabId) {
+					// Vérifier si le contenu actuel correspond au contenu original
+					const isOriginalContent =
+						tab.originalContent === newContent;
+					return {
+						...tab,
+						content: newContent,
+						modified: !isOriginalContent, // Marquer comme modifié seulement si différent du contenu original
+					};
+				}
+				return tab;
+			})
 		);
 	};
 
@@ -213,12 +246,12 @@ const ElectronLayout = () => {
 			.readFile(fileData.path)
 			.then((content: string | null) => {
 				if (!content) throw new Error("Failed to read file");
-
 				const newTab: FileTab = {
 					id: `tab-${Date.now()}`,
 					name: fileData.name,
 					path: fileData.path,
 					content,
+					originalContent: content, // Stocker le contenu original
 					active: true,
 					language: getLanguageFromFilename(fileData.name),
 				};
@@ -284,9 +317,29 @@ const ElectronLayout = () => {
 				"undo",
 				null
 			);
+
+			// Vérifier l'état du contenu après l'opération d'annulation
+			setTimeout(() => {
+				if (activeTab && (window as any).__MONACO_EDITOR_INSTANCE__) {
+					const currentContent = (
+						window as any
+					).__MONACO_EDITOR_INSTANCE__.getValue();
+
+					// Mettre à jour l'état de modification en fonction de la comparaison avec le contenu original
+					setTabs((prevTabs) =>
+						prevTabs.map((tab) => {
+							if (tab.id === activeTab) {
+								const isOriginalContent =
+									tab.originalContent === currentContent;
+								return { ...tab, modified: !isOriginalContent };
+							}
+							return tab;
+						})
+					);
+				}
+			}, 0);
 		}
 	};
-
 	const handleRedo = () => {
 		if (
 			activeTab &&
@@ -299,7 +352,53 @@ const ElectronLayout = () => {
 				"redo",
 				null
 			);
+
+			// Vérifier l'état du contenu après l'opération de rétablissement
+			setTimeout(() => {
+				if (activeTab && (window as any).__MONACO_EDITOR_INSTANCE__) {
+					const currentContent = (
+						window as any
+					).__MONACO_EDITOR_INSTANCE__.getValue();
+
+					// Mettre à jour l'état de modification en fonction de la comparaison avec le contenu original
+					setTabs((prevTabs) =>
+						prevTabs.map((tab) => {
+							if (tab.id === activeTab) {
+								const isOriginalContent =
+									tab.originalContent === currentContent;
+								return { ...tab, modified: !isOriginalContent };
+							}
+							return tab;
+						})
+					);
+				}
+			}, 0);
 		}
+	};
+
+	// Fonction pour sauvegarder et fermer l'onglet
+	const handleSaveAndClose = async () => {
+		if (tabToClose) {
+			await handleFileSave(tabToClose);
+			closeTab(tabToClose);
+			setIsCloseDialogOpen(false);
+			setTabToClose(null);
+		}
+	};
+
+	// Fonction pour fermer l'onglet sans sauvegarder
+	const handleCloseWithoutSaving = () => {
+		if (tabToClose) {
+			closeTab(tabToClose);
+			setIsCloseDialogOpen(false);
+			setTabToClose(null);
+		}
+	};
+
+	// Fonction pour annuler la fermeture de l'onglet
+	const handleCancelClose = () => {
+		setIsCloseDialogOpen(false);
+		setTabToClose(null);
 	};
 
 	if (!isClient) {
@@ -356,6 +455,41 @@ const ElectronLayout = () => {
 				tabSize={2}
 				useTabs={false}
 			/>
+			{/* Boîte de dialogue de confirmation pour la fermeture d'onglet */}
+			<Dialog
+				open={isCloseDialogOpen}
+				onOpenChange={setIsCloseDialogOpen}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
+							Enregistrer les modifications ?
+						</DialogTitle>
+					</DialogHeader>
+					<div className="py-3">
+						Le fichier{" "}
+						{tabs.find((tab) => tab.id === tabToClose)?.name} a été
+						modifié. Voulez-vous enregistrer les modifications avant
+						de fermer ?
+					</div>
+					<DialogFooter className="flex justify-between sm:justify-between">
+						<Button variant="outline" onClick={handleCancelClose}>
+							Annuler
+						</Button>
+						<div className="flex gap-2">
+							<Button
+								variant="destructive"
+								onClick={handleCloseWithoutSaving}
+							>
+								Fermer sans enregistrer
+							</Button>
+							<Button onClick={handleSaveAndClose}>
+								Sauvegarder
+							</Button>
+						</div>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 };

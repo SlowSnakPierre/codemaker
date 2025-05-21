@@ -28,24 +28,34 @@ export default function CodeEditor({
 	const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 	const [isEditorReady, setIsEditorReady] = useState(false);
 	const contentRef = useRef<string>(content);
-	const { theme } = useTheme();
-	// Fonction pour annuler la dernière modification
+	const { theme } = useTheme(); // Fonction pour annuler la dernière modification
 	const handleUndo = useCallback(() => {
 		if (editorRef.current) {
 			editorRef.current.trigger("keyboard", "undo", null);
+
+			// Notifier le parent de la modification
+			const currentContent = editorRef.current.getValue();
+			contentRef.current = currentContent;
+			onChange(currentContent);
+
 			// Appel du callback externe si défini
 			if (onUndo) onUndo();
 		}
-	}, [onUndo]);
-
+	}, [onChange, onUndo]);
 	// Fonction pour rétablir la dernière modification annulée
 	const handleRedo = useCallback(() => {
 		if (editorRef.current) {
 			editorRef.current.trigger("keyboard", "redo", null);
+
+			// Notifier le parent de la modification
+			const currentContent = editorRef.current.getValue();
+			contentRef.current = currentContent;
+			onChange(currentContent);
+
 			// Appel du callback externe si défini
 			if (onRedo) onRedo();
 		}
-	}, [onRedo]);
+	}, [onChange, onRedo]);
 
 	const handleEditorDidMount: OnMount = (editor, monaco) => {
 		editorRef.current = editor;
@@ -61,17 +71,25 @@ export default function CodeEditor({
 		editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
 			onSave();
 		});
-
 		// Register undo command
 		editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyZ, () => {
 			editor.trigger("keyboard", "undo", null);
-		});
 
+			// Propager le changement au parent
+			const value = editor.getValue();
+			contentRef.current = value;
+			onChange(value);
+		});
 		// Register redo command
 		editor.addCommand(
 			monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyZ,
 			() => {
 				editor.trigger("keyboard", "redo", null);
+
+				// Propager le changement au parent
+				const value = editor.getValue();
+				contentRef.current = value;
+				onChange(value);
 			}
 		);
 
