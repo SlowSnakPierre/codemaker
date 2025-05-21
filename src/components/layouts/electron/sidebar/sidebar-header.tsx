@@ -5,6 +5,7 @@ import {
 	FilePlusIcon,
 	FolderPlusIcon,
 	XIcon,
+	FoldersIcon,
 } from "lucide-react";
 import React from "react";
 
@@ -16,6 +17,7 @@ type Props = {
 	setIsCreatingFile: (creating: boolean) => void;
 	setIsCreatingFolder: (creating: boolean) => void;
 	closeDirectory: () => void;
+	closeAllFolders: () => void;
 };
 
 const SidebarHeader = ({
@@ -26,6 +28,7 @@ const SidebarHeader = ({
 	setIsCreatingFile,
 	setIsCreatingFolder,
 	closeDirectory,
+	closeAllFolders,
 }: Props) => {
 	return (
 		<div className="p-2 border-b border-border flex items-center justify-between">
@@ -57,7 +60,7 @@ const SidebarHeader = ({
 							}}
 						>
 							<FolderPlusIcon className="h-4 w-4 mr-2" />
-						</Button>
+						</Button>{" "}
 						<Button
 							variant="ghost"
 							size="icon"
@@ -71,6 +74,15 @@ const SidebarHeader = ({
 									"animate-spin": isLoading,
 								})}
 							/>
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-6 w-6 mr-1"
+							onClick={closeAllFolders}
+							title="Fermer tous les dossiers"
+						>
+							<FoldersIcon className="h-4 w-4" />
 						</Button>
 						<Button
 							variant="ghost"

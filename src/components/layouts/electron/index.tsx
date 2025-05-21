@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import TitleBar from "./title-bar";
-import { FileData, FileTab } from "@/lib/types";
+import type { FileData, FileTab } from "@/lib/types";
 import EditorPanel from "@/components/editor/editor-panel";
 import {
 	ResizableHandle,
@@ -254,7 +254,7 @@ const ElectronLayout = () => {
 		window.electron
 			.readFile(fileData.path)
 			.then((content: string | null) => {
-				if (!content) throw new Error("Failed to read file"); // Déterminer le langage automatiquement à partir du nom de fichier
+				if (!content) throw new Error("Failed to read file");
 				const detectedLanguage = getLanguageFromFilename(fileData.name);
 
 				const newTab: FileTab = {
@@ -265,7 +265,7 @@ const ElectronLayout = () => {
 					originalContent: content,
 					active: true,
 					language: detectedLanguage,
-					languageOverride: null, // Par défaut en auto-détection
+					languageOverride: null,
 				};
 
 				setTabs((prevTabs) => [
@@ -288,7 +288,6 @@ const ElectronLayout = () => {
 		setTabs((prevTabs) =>
 			prevTabs.map((tab) => {
 				if (tab.id === activeTab) {
-					// Si l'option "auto" est sélectionnée, utilisez la détection automatique
 					const finalLanguage =
 						language === "auto"
 							? getLanguageFromFilename(tab.name)
@@ -297,7 +296,7 @@ const ElectronLayout = () => {
 					return {
 						...tab,
 						language: finalLanguage,
-						// Conserver l'info que l'utilisateur a choisi "auto"
+
 						languageOverride: language === "auto" ? null : language,
 					};
 				}
@@ -310,19 +309,14 @@ const ElectronLayout = () => {
 		if (
 			activeTab &&
 			typeof window !== "undefined" &&
-			(window as any).__MONACO_EDITOR_INSTANCE__
+			window.__MONACO_EDITOR_INSTANCE__
 		) {
-			(window as any).__MONACO_EDITOR_INSTANCE__.trigger(
-				"keyboard",
-				"undo",
-				null
-			);
+			window.__MONACO_EDITOR_INSTANCE__.trigger("keyboard", "undo", null);
 
 			setTimeout(() => {
-				if (activeTab && (window as any).__MONACO_EDITOR_INSTANCE__) {
-					const currentContent = (
-						window as any
-					).__MONACO_EDITOR_INSTANCE__.getValue();
+				if (activeTab && window.__MONACO_EDITOR_INSTANCE__) {
+					const currentContent =
+						window.__MONACO_EDITOR_INSTANCE__.getValue();
 
 					setTabs((prevTabs) =>
 						prevTabs.map((tab) => {
@@ -343,19 +337,14 @@ const ElectronLayout = () => {
 		if (
 			activeTab &&
 			typeof window !== "undefined" &&
-			(window as any).__MONACO_EDITOR_INSTANCE__
+			window.__MONACO_EDITOR_INSTANCE__
 		) {
-			(window as any).__MONACO_EDITOR_INSTANCE__.trigger(
-				"keyboard",
-				"redo",
-				null
-			);
+			window.__MONACO_EDITOR_INSTANCE__.trigger("keyboard", "redo", null);
 
 			setTimeout(() => {
-				if (activeTab && (window as any).__MONACO_EDITOR_INSTANCE__) {
-					const currentContent = (
-						window as any
-					).__MONACO_EDITOR_INSTANCE__.getValue();
+				if (activeTab && window.__MONACO_EDITOR_INSTANCE__) {
+					const currentContent =
+						window.__MONACO_EDITOR_INSTANCE__.getValue();
 
 					setTabs((prevTabs) =>
 						prevTabs.map((tab) => {
@@ -409,12 +398,12 @@ const ElectronLayout = () => {
 				onUndo={handleUndo}
 				onRedo={handleRedo}
 			/>
-			<ResizablePanelGroup direction="horizontal" className="flex-grow">
+			<ResizablePanelGroup direction="horizontal">
 				{!sidebarCollapsed && (
 					<ResizablePanel
 						defaultSize={15}
-						minSize={12.5}
-						maxSize={30}
+						minSize={15}
+						maxSize={40}
 						className="bg-card border-r border-border"
 					>
 						<Sidebar
@@ -422,6 +411,7 @@ const ElectronLayout = () => {
 							onFileSelect={handleFileSelect}
 							onDirectoryOpen={handleDirectoryOpen}
 							onDirectoryClose={handleDirectoryClose}
+							activeTab={tabs.find((tab) => tab.id === activeTab)}
 						/>
 					</ResizablePanel>
 				)}
@@ -470,7 +460,7 @@ const ElectronLayout = () => {
 						Le fichier{" "}
 						{tabs.find((tab) => tab.id === tabToClose)?.name} a été
 						modifié. Voulez-vous enregistrer les modifications avant
-						de fermer l'onglet ?
+						de fermer l&apos;onglet ?
 					</div>
 					<DialogFooter className="flex justify-between sm:justify-between">
 						<Button variant="outline" onClick={handleCancelClose}>

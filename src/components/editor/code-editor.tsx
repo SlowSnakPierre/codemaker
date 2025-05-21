@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Editor, { Monaco, OnMount } from "@monaco-editor/react";
-import { editor } from "monaco-editor";
+import Editor, { type Monaco, type OnMount } from "@monaco-editor/react";
+import type { editor } from "monaco-editor";
 import { useTheme } from "next-themes";
 
 interface CodeEditorProps {
@@ -59,7 +59,7 @@ export default function CodeEditor({
 		contentRef.current = content;
 
 		if (typeof window !== "undefined") {
-			(window as any).__MONACO_EDITOR_INSTANCE__ = editor;
+			window.__MONACO_EDITOR_INSTANCE__ = editor;
 		}
 
 		editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
@@ -164,9 +164,9 @@ export default function CodeEditor({
 		return () => {
 			if (
 				typeof window !== "undefined" &&
-				(window as any).__MONACO_EDITOR_INSTANCE__
+				window.__MONACO_EDITOR_INSTANCE__
 			) {
-				(window as any).__MONACO_EDITOR_INSTANCE__ = null;
+				window.__MONACO_EDITOR_INSTANCE__ = null;
 			}
 		};
 	}, []);

@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { editor } from "monaco-editor";
+
 declare global {
 	interface Window {
 		electron: ElectronAPI;
+		__MONACO_EDITOR_INSTANCE__: editor.IStandaloneCodeEditor | null;
 	}
 }
 
@@ -90,9 +93,9 @@ export interface FileTab {
 	name: string;
 	path: string | null;
 	content: string;
-	originalContent?: string; // Contenu original du fichier pour comparer après les opérations d'annulation
+	originalContent?: string;
 	language: string;
-	languageOverride?: string | null; // Langage choisi explicitement par l'utilisateur (null = auto-détection)
+	languageOverride?: string | null;
 	active?: boolean;
 	modified?: boolean;
 }

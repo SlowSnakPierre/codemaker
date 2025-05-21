@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileTab } from "@/lib/types";
+import type { FileTab } from "@/lib/types";
 import CodeEditor from "@/components/editor/code-editor";
 import { toast } from "sonner";
-import { XIcon, CircleIcon, SaveIcon } from "lucide-react";
+import { XIcon, CircleIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EditorPanelProps {

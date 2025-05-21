@@ -1,4 +1,4 @@
-import { FileData } from "@/lib/types";
+import type { FileData, FileTab } from "@/lib/types";
 import FileItem from "./file-item";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,10 +16,12 @@ import {
 	RefreshCwIcon,
 } from "lucide-react";
 import React from "react";
+import IndentationBars from "./indentation-bars";
 
 interface FolderItemProps {
 	item: FileData;
 	level: number;
+	activeTab: FileTab | undefined;
 	expandedFolders: Record<string, boolean>;
 	toggleFolder: (path: string) => void;
 	handleFolderClick: (path: string) => void;
@@ -33,6 +35,7 @@ interface FolderItemProps {
 export default function FolderItem({
 	item,
 	level,
+	activeTab,
 	expandedFolders,
 	toggleFolder,
 	handleFolderClick,
@@ -42,35 +45,25 @@ export default function FolderItem({
 	refreshFolder,
 	onFileSelect,
 }: FolderItemProps) {
-	const isExpanded = expandedFolders[item.path] || false;
+	const normalizedPath = React.useMemo(() => {
+		return item.path.replace(/\\/g, "/");
+	}, [item.path]);
+
+	const isExpanded = React.useMemo(() => {
+		return (
+			expandedFolders[normalizedPath] ||
+			expandedFolders[item.path] ||
+			false
+		);
+	}, [expandedFolders, item.path, normalizedPath]);
+
 	const paddingLeft = level * 16;
-
-	const renderIndentationBars = () => {
-		const bars = [];
-		for (let i = 0; i < level; i++) {
-			const isLastBar = i === level - 1;
-			const borderColor = isLastBar
-				? "border-gray-200 dark:border-gray-700"
-				: "border-gray-300 dark:border-gray-800";
-			bars.push(
-				<div
-					key={i}
-					className={`absolute h-full w-px ${borderColor} left-[${
-						i * 16 + 8
-					}px] top-0`}
-					style={{ left: `${i * 16 + 8}px`, width: "1px" }}
-				></div>
-			);
-		}
-		return bars;
-	};
-
 	return (
 		<div key={item.path} className="folder-container relative">
-			{level > 0 && renderIndentationBars()}
+			<IndentationBars level={level} activeTab={activeTab} item={item} />
 			<div
 				className="group flex items-center py-1 pl-4 pr-2 cursor-pointer hover:bg-muted relative"
-				onClick={() => handleFolderClick(item.path)}
+				onClick={() => handleFolderClick(normalizedPath)}
 				style={{ paddingLeft: `${paddingLeft}px` }}
 			>
 				<span className="text-muted-foreground">
@@ -80,10 +73,10 @@ export default function FolderItem({
 						<ChevronRightIcon className="h-4 w-4" />
 					)}
 				</span>
-				<span className="text-sm truncate flex-grow ml-2 text-yellow-400">
+				<span className="text-sm truncate flex-grow ml-2 text-neutral-600 dark:text-neutral-200">
 					{item.name}
 				</span>
-				<div className="opacity-0 group-hover:opacity-100 absolute right-2 bg-background">
+				<div className="opacity-0 group-hover:opacity-100 absolute right-2">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
@@ -91,7 +84,7 @@ export default function FolderItem({
 								size="icon"
 								className="h-6 w-6"
 							>
-								<PlusIcon className="h-3 w-3" />
+								<PlusIcon className="h-3 w-3 text-neutral-600 dark:text-neutral-200" />
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
@@ -126,42 +119,43 @@ export default function FolderItem({
 							refreshFolder(item.path);
 						}}
 					>
-						<RefreshCwIcon className="h-3 w-3" />
+						<RefreshCwIcon className="h-3 w-3 text-neutral-600 dark:text-neutral-200" />
 					</Button>
 				</div>
 			</div>
-			{isExpanded && item.children && (
+			{isExpanded && (
 				<div className="pl-0 relative">
-					<div
-						className="absolute border-l border-gray-300 dark:border-gray-700"
-						style={{
-							left: `${level * 16 + 8}px`,
-							top: 0,
-							bottom: 0,
-						}}
-					></div>
-					{item.children.map((child) =>
-						child.isDirectory ? (
-							<FolderItem
-								key={child.path}
-								item={child}
-								level={level + 1}
-								expandedFolders={expandedFolders}
-								toggleFolder={toggleFolder}
-								handleFolderClick={handleFolderClick}
-								setSelectedFolder={setSelectedFolder}
-								setIsCreatingFile={setIsCreatingFile}
-								setIsCreatingFolder={setIsCreatingFolder}
-								refreshFolder={refreshFolder}
-								onFileSelect={onFileSelect}
-							/>
-						) : (
-							<FileItem
-								key={child.path}
-								item={child}
-								level={level + 1}
-								onFileSelect={onFileSelect}
-							/>
+					{/* Debug info pour faciliter le débogage */}
+					{!item.children || item.children.length === 0 ? (
+						<div className="pl-10 py-1 text-xs text-muted-foreground">
+							Chargement...
+						</div>
+					) : (
+						item.children.map((child) =>
+							child.isDirectory ? (
+								<FolderItem
+									key={child.path}
+									item={child}
+									level={level + 1}
+									expandedFolders={expandedFolders}
+									toggleFolder={toggleFolder}
+									handleFolderClick={handleFolderClick}
+									setSelectedFolder={setSelectedFolder}
+									setIsCreatingFile={setIsCreatingFile}
+									setIsCreatingFolder={setIsCreatingFolder}
+									refreshFolder={refreshFolder}
+									onFileSelect={onFileSelect}
+									activeTab={activeTab}
+								/>
+							) : (
+								<FileItem
+									key={child.path}
+									item={child}
+									level={level + 1}
+									onFileSelect={onFileSelect}
+									activeTab={activeTab}
+								/>
+							)
 						)
 					)}
 				</div>

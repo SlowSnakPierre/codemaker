@@ -23,7 +23,7 @@ type Props = {
 	};
 	tabSize: number;
 	useTabs: boolean;
-	onLanguageChange?: (language: string) => void;
+	onLanguageChange: (language: string) => void;
 };
 
 const availableLanguages = [
@@ -138,7 +138,6 @@ const StatusBar = ({
 	const isAutoDetect =
 		languageOverride === null || languageOverride === undefined;
 
-	const displayMode = isAutoDetect ? "auto" : languageOverride || "";
 	const formattedLanguage = isAutoDetect
 		? `${formatLanguage(language)} (Auto)`
 		: formatLanguage(languageOverride || language);
@@ -211,7 +210,6 @@ const StatusBar = ({
 											onClick={(e) => {
 												e.stopPropagation();
 												setSearchQuery("");
-												// Redonner le focus à l'input après avoir effacé
 												e.currentTarget.parentElement
 													?.querySelector("input")
 													?.focus();
@@ -220,9 +218,8 @@ const StatusBar = ({
 											<X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
 										</button>
 									)}
-								</div>{" "}
+								</div>
 								<ScrollArea className="h-[350px] overflow-y-auto pr-2">
-									{/* Option de détection automatique toujours en premier */}
 									{filteredLanguages.includes("auto") && (
 										<>
 											<DropdownMenuItem
@@ -233,12 +230,8 @@ const StatusBar = ({
 														: ""
 												}`}
 												onSelect={(e) => {
-													// Empêcher la fermeture automatique du menu en interceptant l'événement
 													e.preventDefault();
-													onLanguageChange &&
-														onLanguageChange(
-															"auto"
-														);
+													onLanguageChange("auto");
 													setIsLanguageMenuOpen(
 														false
 													);
@@ -249,7 +242,6 @@ const StatusBar = ({
 											<DropdownMenuSeparator />
 										</>
 									)}
-									{/* Autres langages */}
 									<div className="grid grid-cols-2 gap-x-1">
 										{filteredLanguages
 											.filter((lang) => lang !== "auto")
@@ -265,10 +257,7 @@ const StatusBar = ({
 													}`}
 													onSelect={(e) => {
 														e.preventDefault();
-														onLanguageChange &&
-															onLanguageChange(
-																lang
-															);
+														onLanguageChange(lang);
 														setIsLanguageMenuOpen(
 															false
 														);
