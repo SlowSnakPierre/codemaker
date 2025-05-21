@@ -29,8 +29,9 @@ const ElectronLayout = () => {
 		line: 1,
 		column: 1,
 	});
-	// États pour la popup de confirmation de fermeture d'onglet	const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+	const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
 	const [tabToClose, setTabToClose] = useState<string | null>(null);
+	const [isAppClosing, setIsAppClosing] = useState(false);
 
 	const isElectron = typeof window !== "undefined" && window.electron;
 
@@ -155,7 +156,7 @@ const ElectronLayout = () => {
 									path: savedPath,
 									name: fileName || "Untitled",
 									modified: false,
-									originalContent: t.content, // Mettre à jour le contenu original après la sauvegarde
+									originalContent: t.content,
 							  }
 							: t
 					)
@@ -180,19 +181,15 @@ const ElectronLayout = () => {
 	const handleTabClose = async (tabId: string) => {
 		const tabToClose = tabs.find((tab) => tab.id === tabId);
 
-		// Vérifier si le fichier a été modifié
 		if (tabToClose?.modified) {
-			// Ouvrir la boîte de dialogue de confirmation
 			setTabToClose(tabId);
 			setIsCloseDialogOpen(true);
 			return;
 		}
 
-		// Si le fichier n'a pas été modifié, fermer l'onglet directement
 		closeTab(tabId);
 	};
 
-	// Fonction pour fermer effectivement l'onglet
 	const closeTab = (tabId: string) => {
 		const isActiveTab = tabs.find((tab) => tab.id === tabId)?.active;
 
@@ -217,13 +214,12 @@ const ElectronLayout = () => {
 		setTabs((prevTabs) =>
 			prevTabs.map((tab) => {
 				if (tab.id === tabId) {
-					// Vérifier si le contenu actuel correspond au contenu original
 					const isOriginalContent =
 						tab.originalContent === newContent;
 					return {
 						...tab,
 						content: newContent,
-						modified: !isOriginalContent, // Marquer comme modifié seulement si différent du contenu original
+						modified: !isOriginalContent,
 					};
 				}
 				return tab;
@@ -251,7 +247,7 @@ const ElectronLayout = () => {
 					name: fileData.name,
 					path: fileData.path,
 					content,
-					originalContent: content, // Stocker le contenu original
+					originalContent: content,
 					active: true,
 					language: getLanguageFromFilename(fileData.name),
 				};
@@ -304,28 +300,25 @@ const ElectronLayout = () => {
 
 	const handleCursorPositionChange = (line: number, column: number) => {
 		setCursorPosition({ line, column });
-	}; // Fonctions pour gérer les actions undo/redo
+	};
 	const handleUndo = () => {
 		if (
 			activeTab &&
 			typeof window !== "undefined" &&
 			(window as any).__MONACO_EDITOR_INSTANCE__
 		) {
-			// Utiliser la référence globale à l'éditeur Monaco
 			(window as any).__MONACO_EDITOR_INSTANCE__.trigger(
 				"keyboard",
 				"undo",
 				null
 			);
 
-			// Vérifier l'état du contenu après l'opération d'annulation
 			setTimeout(() => {
 				if (activeTab && (window as any).__MONACO_EDITOR_INSTANCE__) {
 					const currentContent = (
 						window as any
 					).__MONACO_EDITOR_INSTANCE__.getValue();
 
-					// Mettre à jour l'état de modification en fonction de la comparaison avec le contenu original
 					setTabs((prevTabs) =>
 						prevTabs.map((tab) => {
 							if (tab.id === activeTab) {
@@ -340,27 +333,25 @@ const ElectronLayout = () => {
 			}, 0);
 		}
 	};
+
 	const handleRedo = () => {
 		if (
 			activeTab &&
 			typeof window !== "undefined" &&
 			(window as any).__MONACO_EDITOR_INSTANCE__
 		) {
-			// Utiliser la référence globale à l'éditeur Monaco
 			(window as any).__MONACO_EDITOR_INSTANCE__.trigger(
 				"keyboard",
 				"redo",
 				null
 			);
 
-			// Vérifier l'état du contenu après l'opération de rétablissement
 			setTimeout(() => {
 				if (activeTab && (window as any).__MONACO_EDITOR_INSTANCE__) {
 					const currentContent = (
 						window as any
 					).__MONACO_EDITOR_INSTANCE__.getValue();
 
-					// Mettre à jour l'état de modification en fonction de la comparaison avec le contenu original
 					setTabs((prevTabs) =>
 						prevTabs.map((tab) => {
 							if (tab.id === activeTab) {
@@ -376,7 +367,6 @@ const ElectronLayout = () => {
 		}
 	};
 
-	// Fonction pour sauvegarder et fermer l'onglet
 	const handleSaveAndClose = async () => {
 		if (tabToClose) {
 			await handleFileSave(tabToClose);
@@ -386,7 +376,6 @@ const ElectronLayout = () => {
 		}
 	};
 
-	// Fonction pour fermer l'onglet sans sauvegarder
 	const handleCloseWithoutSaving = () => {
 		if (tabToClose) {
 			closeTab(tabToClose);
@@ -395,7 +384,6 @@ const ElectronLayout = () => {
 		}
 	};
 
-	// Fonction pour annuler la fermeture de l'onglet
 	const handleCancelClose = () => {
 		setIsCloseDialogOpen(false);
 		setTabToClose(null);
@@ -404,6 +392,7 @@ const ElectronLayout = () => {
 	if (!isClient) {
 		return null;
 	}
+
 	return (
 		<div className="flex flex-col h-screen overflow-hidden">
 			<TitleBar
@@ -454,7 +443,7 @@ const ElectronLayout = () => {
 				cursorPosition={cursorPosition}
 				tabSize={2}
 				useTabs={false}
-			/>
+			/>{" "}
 			{/* Boîte de dialogue de confirmation pour la fermeture d'onglet */}
 			<Dialog
 				open={isCloseDialogOpen}
@@ -467,10 +456,19 @@ const ElectronLayout = () => {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="py-3">
-						Le fichier{" "}
-						{tabs.find((tab) => tab.id === tabToClose)?.name} a été
-						modifié. Voulez-vous enregistrer les modifications avant
-						de fermer ?
+						{isAppClosing ? (
+							"Des fichiers ont été modifiés. Voulez-vous enregistrer les modifications avant de fermer l'onglet ?"
+						) : (
+							<>
+								Le fichier{" "}
+								{
+									tabs.find((tab) => tab.id === tabToClose)
+										?.name
+								}{" "}
+								a été modifié. Voulez-vous enregistrer les
+								modifications avant de fermer l'onglet ?
+							</>
+						)}
 					</div>
 					<DialogFooter className="flex justify-between sm:justify-between">
 						<Button variant="outline" onClick={handleCancelClose}>

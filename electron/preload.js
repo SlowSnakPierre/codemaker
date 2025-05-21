@@ -1,5 +1,13 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+// Configurer les écouteurs d'événements IPC
+const listeners = {};
+ipcRenderer.on("app-close-attempted", () => {
+	if (listeners["app-close-attempted"]) {
+		listeners["app-close-attempted"]();
+	}
+});
+
 contextBridge.exposeInMainWorld("electron", {
 	openDirectory: () => ipcRenderer.invoke("dialog:openDirectory"),
 	openFile: () => ipcRenderer.invoke("dialog:openFile"),

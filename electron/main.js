@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 const store = new Store();
 
 let mainWindow;
+
 function createWindow() {
 	mainWindow = new BrowserWindow({
 		width: 1200,

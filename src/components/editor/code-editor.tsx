@@ -28,31 +28,27 @@ export default function CodeEditor({
 	const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 	const [isEditorReady, setIsEditorReady] = useState(false);
 	const contentRef = useRef<string>(content);
-	const { theme } = useTheme(); // Fonction pour annuler la dernière modification
+	const { resolvedTheme } = useTheme();
 	const handleUndo = useCallback(() => {
 		if (editorRef.current) {
 			editorRef.current.trigger("keyboard", "undo", null);
 
-			// Notifier le parent de la modification
 			const currentContent = editorRef.current.getValue();
 			contentRef.current = currentContent;
 			onChange(currentContent);
 
-			// Appel du callback externe si défini
 			if (onUndo) onUndo();
 		}
 	}, [onChange, onUndo]);
-	// Fonction pour rétablir la dernière modification annulée
+
 	const handleRedo = useCallback(() => {
 		if (editorRef.current) {
 			editorRef.current.trigger("keyboard", "redo", null);
 
-			// Notifier le parent de la modification
 			const currentContent = editorRef.current.getValue();
 			contentRef.current = currentContent;
 			onChange(currentContent);
 
-			// Appel du callback externe si défini
 			if (onRedo) onRedo();
 		}
 	}, [onChange, onRedo]);
@@ -62,43 +58,37 @@ export default function CodeEditor({
 		setIsEditorReady(true);
 		contentRef.current = content;
 
-		// Expose l'instance de l'éditeur pour les fonctions externes (comme les boutons de la barre de titre)
 		if (typeof window !== "undefined") {
 			(window as any).__MONACO_EDITOR_INSTANCE__ = editor;
 		}
 
-		// Register save command
 		editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
 			onSave();
 		});
-		// Register undo command
+
 		editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyZ, () => {
 			editor.trigger("keyboard", "undo", null);
 
-			// Propager le changement au parent
 			const value = editor.getValue();
 			contentRef.current = value;
 			onChange(value);
 		});
-		// Register redo command
+
 		editor.addCommand(
 			monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyZ,
 			() => {
 				editor.trigger("keyboard", "redo", null);
 
-				// Propager le changement au parent
 				const value = editor.getValue();
 				contentRef.current = value;
 				onChange(value);
 			}
 		);
 
-		// Track cursor position
 		editor.onDidChangeCursorPosition((e) => {
 			onCursorPositionChange(e.position.lineNumber, e.position.column);
 		});
 
-		// Set up content change listener
 		editor.onDidChangeModelContent(() => {
 			const value = editor.getValue();
 			contentRef.current = value;
@@ -108,20 +98,17 @@ export default function CodeEditor({
 		editor.focus();
 	};
 
-	// Handle theme changes
 	useEffect(() => {
 		if (!editorRef.current) return;
 
-		if (theme === "dark") {
+		if (resolvedTheme === "dark") {
 			editorRef.current.updateOptions({ theme: "vs-dark" });
 		} else {
 			editorRef.current.updateOptions({ theme: "vs" });
 		}
-	}, [theme]);
+	}, [resolvedTheme]);
 
-	// Configure Monaco before mounting
 	const handleEditorWillMount = (monaco: Monaco) => {
-		// Configure Monaco editor here if needed
 		monaco.editor.defineTheme("customDark", {
 			base: "vs-dark",
 			inherit: true,
@@ -132,20 +119,15 @@ export default function CodeEditor({
 		});
 	};
 
-	// Sync content with editor when it changes externally
 	useEffect(() => {
 		if (editorRef.current && isEditorReady) {
-			// Only update if the content has actually changed and is different from what we have
 			if (content !== contentRef.current) {
-				// Save current cursor position and selection
 				const position = editorRef.current.getPosition();
 				const selection = editorRef.current.getSelection();
 
-				// Update content
 				editorRef.current.setValue(content);
 				contentRef.current = content;
 
-				// Restore cursor position and selection
 				if (position) {
 					editorRef.current.setPosition(position);
 				}
@@ -155,22 +137,19 @@ export default function CodeEditor({
 			}
 		}
 	}, [content, isEditorReady]);
-	// Handle keyboard shortcuts globally
+
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			// Save shortcut (Ctrl+S / Cmd+S)
 			if ((e.metaKey || e.ctrlKey) && e.key === "s") {
 				e.preventDefault();
 				onSave();
 			}
 
-			// Undo shortcut (Ctrl+Z / Cmd+Z)
 			if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === "z") {
 				e.preventDefault();
 				handleUndo();
 			}
 
-			// Redo shortcut (Ctrl+Shift+Z / Cmd+Shift+Z)
 			if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "z") {
 				e.preventDefault();
 				handleRedo();
@@ -181,7 +160,6 @@ export default function CodeEditor({
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [onSave, handleUndo, handleRedo]);
 
-	// Nettoyer la référence globale lorsque le composant est démonté
 	useEffect(() => {
 		return () => {
 			if (
@@ -199,7 +177,7 @@ export default function CodeEditor({
 			width="100%"
 			language={language}
 			value={content}
-			theme={theme === "dark" ? "vs-dark" : "vs"}
+			theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
 			beforeMount={handleEditorWillMount}
 			onMount={handleEditorDidMount}
 			options={{
@@ -247,8 +225,8 @@ export default function CodeEditor({
 					autoFindInSelection: "never",
 					seedSearchStringFromSelection: "always",
 				},
-				// Paramètres d'annulation/rétablissement
-				undoLimit: 100, // Nombre maximum d'opérations d'annulation à conserver
+
+				undoLimit: 100,
 			}}
 		/>
 	);

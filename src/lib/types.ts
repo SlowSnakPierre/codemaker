@@ -13,7 +13,6 @@ export interface ElectronAPI {
 	readDirectory: (dirPath: string) => Promise<ReadDirectory[] | null>;
 	readFile: (filePath: string) => Promise<string | null>;
 	writeFile: (params: ReadFile) => Promise<boolean>;
-
 	minimizeWindow: () => Promise<void>;
 	maximizeWindow: () => Promise<boolean>;
 	closeWindow: () => Promise<void>;
