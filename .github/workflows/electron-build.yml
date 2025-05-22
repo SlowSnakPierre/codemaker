@@ -105,23 +105,28 @@ jobs:
                   # Optimisations pour electron-builder
                   ELECTRON_BUILDER_COMPRESSION: maximum
                   ELECTRON_BUILDER_COMPRESSION_LEVEL: 9
-                  ELECTRON_ENABLE_LOGGING: 1
-
-            # Compression des artefacts avant l'upload
+                  ELECTRON_ENABLE_LOGGING: 1 # Compression des artefacts avant l'upload
             - name: Compress Windows artifacts
               if: matrix.os == 'windows-latest'
+              shell: pwsh
               run: |
                   Compress-Archive -Path "dist/*.exe", "dist/latest.yml" -DestinationPath "dist/windows-artifacts.zip"
 
             - name: Compress macOS artifacts
               if: matrix.os == 'macos-latest'
+              shell: bash
               run: |
-                  Compress-Archive -Path "dist/*.dmg", "dist/latest-mac.yml" -DestinationPath "dist/macos-artifacts.zip"
+                  cd dist
+                  zip -j macos-artifacts.zip *.dmg latest-mac.yml
+                  mv macos-artifacts.zip ../dist/
 
             - name: Compress Linux artifacts
               if: matrix.os == 'ubuntu-latest'
+              shell: bash
               run: |
-                  Compress-Archive -Path "dist/*.AppImage", "dist/latest-linux.yml" -DestinationPath "dist/linux-artifacts.zip"
+                  cd dist
+                  zip -j linux-artifacts.zip *.AppImage latest-linux.yml
+                  mv linux-artifacts.zip ../dist/
 
             - name: Upload Windows artifacts
               if: matrix.os == 'windows-latest'
