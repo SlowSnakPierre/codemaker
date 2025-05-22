@@ -32,7 +32,7 @@ const SidebarHeader = ({
 }: Props) => {
 	return (
 		<div className="p-2 border-b border-border flex items-center justify-between">
-			<h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+			<h2 className="text-xs font-normal uppercase tracking-wider text-neutral-500 dark:text-neutral-200">
 				Explorateur
 			</h2>
 
@@ -42,35 +42,35 @@ const SidebarHeader = ({
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-6 w-6 mr-1"
+							className="h-6 w-6 mr-1 hover:bg-neutral-200"
 							onClick={() => {
 								setSelectedFolder(currentDirectory);
 								setIsCreatingFile(true);
 							}}
 						>
-							<FilePlusIcon className="h-4 w-4 mr-2" />
+							<FilePlusIcon className="h-4 w-4 text-neutral-500" />
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-6 w-6 mr-1"
+							className="h-6 w-6 mr-1 hover:bg-neutral-200"
 							onClick={() => {
 								setSelectedFolder(currentDirectory);
 								setIsCreatingFolder(true);
 							}}
 						>
-							<FolderPlusIcon className="h-4 w-4 mr-2" />
+							<FolderPlusIcon className="h-4 w-4 text-neutral-500" />
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-6 w-6 mr-1"
+							className="h-6 w-6 mr-1 hover:bg-neutral-200"
 							onClick={() => refreshFolder(currentDirectory)}
 							title="Rafraîchir"
 							disabled={isLoading}
 						>
 							<RefreshCwIcon
-								className={cn("h-4 w-4", {
+								className={cn("h-4 w-4 text-neutral-500", {
 									"animate-spin": isLoading,
 								})}
 							/>
@@ -78,19 +78,19 @@ const SidebarHeader = ({
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-6 w-6 mr-1"
+							className="h-6 w-6 mr-1 hover:bg-neutral-200"
 							onClick={closeAllFolders}
 							title="Fermer tous les dossiers"
 						>
-							<FoldersIcon className="h-4 w-4" />
+							<FoldersIcon className="h-4 w-4 text-neutral-500" />
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-6 w-6"
+							className="h-6 w-6 hover:bg-neutral-200"
 							onClick={closeDirectory}
 						>
-							<XIcon className="h-4 w-4" />
+							<XIcon className="h-4 w-4 text-neutral-500" />
 						</Button>
 					</>
 				)}

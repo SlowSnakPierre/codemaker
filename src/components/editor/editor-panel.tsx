@@ -7,6 +7,7 @@ import CodeEditor from "@/components/editor/code-editor";
 import { toast } from "sonner";
 import { XIcon, CircleIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface EditorPanelProps {
 	tabs: FileTab[];
@@ -146,50 +147,21 @@ export default function EditorPanel({
 				</>
 			) : (
 				<div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-					<div className="max-w-md text-center">
-						<h3 className="text-xl font-semibold mb-4">
-							Welcome to Next Electron Code Editor
-						</h3>
-						<p className="mb-6">
-							Open a file or folder to get started
-						</p>
-						<div className="flex gap-4 justify-center">
-							<button
-								className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-								onClick={() => {
-									if (isElectron) {
-										window.electron.openFile();
-									} else {
-										toast.error(
-											"File system access is only available in the Electron app"
-										);
-									}
-								}}
-							>
-								Open File
-							</button>
-							<button
-								className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 transition-colors"
-								onClick={() => {
-									if (isElectron) {
-										window.electron.openDirectory();
-									} else {
-										toast.error(
-											"File system access is only available in the Electron app"
-										);
-									}
-								}}
-							>
-								Open Folder
-							</button>
-						</div>
+					<div className="flex flex-col items-center justify-between max-w-md text-center">
+						<Image
+							src="/logo.svg"
+							alt="CodeMaker"
+							width={200}
+							height={200}
+							className="flex-1"
+						/>
 						<p className="mt-6 text-sm flex justify-center gap-3">
 							<kbd className="px-2 py-1 bg-muted rounded border border-border">
-								Cmd+O
+								Ctrl + O
 							</kbd>
 							<span>to open files</span>
 							<kbd className="px-2 py-1 bg-muted rounded border border-border">
-								Cmd+S
+								Ctrl + S
 							</kbd>
 							<span>to save</span>
 						</p>

@@ -25,6 +25,8 @@ import {
 	startWatcherHealthCheck,
 	stopWatcherHealthCheck,
 } from "@/lib/watcher-utils";
+import PageSelector from "../sidebar/page-selector";
+import { Separator } from "@/components/ui/separator";
 
 const ElectronLayout = () => {
 	const [isClient, setIsClient] = useState(false);
@@ -597,20 +599,24 @@ const ElectronLayout = () => {
 			/>
 			<ResizablePanelGroup direction="horizontal">
 				{!sidebarCollapsed && (
-					<ResizablePanel
-						defaultSize={15}
-						minSize={15}
-						maxSize={40}
-						className="bg-card border-r border-border"
-					>
-						<Sidebar
-							currentDirectory={currentDirectory}
-							onFileSelect={handleFileSelect}
-							onDirectoryOpen={handleDirectoryOpen}
-							onDirectoryClose={handleDirectoryClose}
-							activeTab={tabs.find((tab) => tab.id === activeTab)}
-						/>
-					</ResizablePanel>
+					<>
+						<PageSelector />
+						<ResizablePanel
+							defaultSize={15}
+							minSize={15}
+							maxSize={20}
+						>
+							<Sidebar
+								currentDirectory={currentDirectory}
+								onFileSelect={handleFileSelect}
+								onDirectoryOpen={handleDirectoryOpen}
+								onDirectoryClose={handleDirectoryClose}
+								activeTab={tabs.find(
+									(tab) => tab.id === activeTab
+								)}
+							/>
+						</ResizablePanel>
+					</>
 				)}
 				<ResizableHandle />
 				<ResizablePanel defaultSize={80} minSize={30}>

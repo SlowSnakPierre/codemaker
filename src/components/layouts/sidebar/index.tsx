@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import SidebarHeader from "./explorer/sidebar-header";
 import Explorer from "./explorer/explorer";
 import SidebarDialogs from "./explorer/sidebar-dialogs";
+import PageSelector from "./page-selector";
 
 interface SidebarProps {
 	activeTab: FileTab | undefined;
@@ -500,7 +501,7 @@ export default function Sidebar({
 	]);
 
 	return (
-		<div className="flex flex-col h-full select-none group/sidebar">
+		<div className="flex flex-col h-full select-none group/sidebar bg-gray-100 dark:bg-neutral-900">
 			<SidebarHeader
 				isLoading={isLoading}
 				currentDirectory={currentDirectory}

@@ -94,7 +94,7 @@ const TitleBar = ({
 					</div>
 
 					<MenubarMenu>
-						<MenubarTrigger className="text-sm px-3 focus:bg-gray-200 data-[state=open]:bg-gray-200 dark:focus:bg-muted dark:data-[state=open]:bg-muted font-normal text-gray-700 dark:text-neutral-300">
+						<MenubarTrigger className="text-sm px-3 hover:bg-neutral-200 focus:bg-gray-200 data-[state=open]:bg-gray-200 dark:focus:bg-muted dark:data-[state=open]:bg-muted font-normal text-gray-700 dark:text-neutral-300">
 							Fichier
 						</MenubarTrigger>
 						<MenubarContent>
@@ -102,7 +102,7 @@ const TitleBar = ({
 								Nouveau fichier{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+N
+										Ctrl + N
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -110,7 +110,7 @@ const TitleBar = ({
 								Nouvelle fenêtre{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+Maj+N
+										Ctrl + Maj + N
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -119,7 +119,7 @@ const TitleBar = ({
 								Ouvrir le fichier{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+O
+										Ctrl + O
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -127,7 +127,7 @@ const TitleBar = ({
 								Ouvrir le dossier{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+O
+										Ctrl + Maj + O
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -136,7 +136,7 @@ const TitleBar = ({
 								Enregistrer{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+S
+										Ctrl + S
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -144,7 +144,7 @@ const TitleBar = ({
 								Enregistrer sous{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+Maj+S
+										Ctrl + Maj + S
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -156,7 +156,7 @@ const TitleBar = ({
 					</MenubarMenu>
 
 					<MenubarMenu>
-						<MenubarTrigger className="text-sm px-3 focus:bg-gray-200 data-[state=open]:bg-gray-200 dark:focus:bg-muted dark:data-[state=open]:bg-muted font-normal text-gray-700 dark:text-neutral-300">
+						<MenubarTrigger className="text-sm px-3 hover:bg-neutral-200 focus:bg-gray-200 data-[state=open]:bg-gray-200 dark:focus:bg-muted dark:data-[state=open]:bg-muted font-normal text-gray-700 dark:text-neutral-300">
 							Édition
 						</MenubarTrigger>
 						<MenubarContent>
@@ -164,7 +164,7 @@ const TitleBar = ({
 								Annuler{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+Z
+										Ctrl + Z
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -172,7 +172,7 @@ const TitleBar = ({
 								Rétablir{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+Y
+										Ctrl + Y
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -181,7 +181,7 @@ const TitleBar = ({
 								Couper{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+X
+										Ctrl + X
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -189,7 +189,7 @@ const TitleBar = ({
 								Copier{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+C
+										Ctrl + C
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -197,7 +197,7 @@ const TitleBar = ({
 								Coller{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+V
+										Ctrl + V
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -206,7 +206,7 @@ const TitleBar = ({
 								Rechercher{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+F
+										Ctrl + F
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -214,7 +214,7 @@ const TitleBar = ({
 								Remplacer{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+H
+										Ctrl + H
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -222,7 +222,7 @@ const TitleBar = ({
 					</MenubarMenu>
 
 					<MenubarMenu>
-						<MenubarTrigger className="text-sm px-3 focus:bg-gray-200 data-[state=open]:bg-gray-200 dark:focus:bg-muted dark:data-[state=open]:bg-muted font-normal text-gray-700 dark:text-neutral-300">
+						<MenubarTrigger className="text-sm px-3 hover:bg-neutral-200 focus:bg-gray-200 data-[state=open]:bg-gray-200 dark:focus:bg-muted dark:data-[state=open]:bg-muted font-normal text-gray-700 dark:text-neutral-300">
 							Affichage
 						</MenubarTrigger>
 						<MenubarContent>
@@ -230,7 +230,7 @@ const TitleBar = ({
 								Activer/désactiver la barre latérale{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+B
+										Ctrl + B
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -268,7 +268,7 @@ const TitleBar = ({
 								Zoom avant{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl++
+										Ctrl + +
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -276,7 +276,7 @@ const TitleBar = ({
 								Zoom arrière{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+-
+										Ctrl + -
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -284,7 +284,7 @@ const TitleBar = ({
 					</MenubarMenu>
 
 					<MenubarMenu>
-						<MenubarTrigger className="text-sm px-3 focus:bg-gray-200 data-[state=open]:bg-gray-200 dark:focus:bg-muted dark:data-[state=open]:bg-muted font-normal text-gray-700 dark:text-neutral-300">
+						<MenubarTrigger className="text-sm px-3 hover:bg-neutral-200 focus:bg-gray-200 data-[state=open]:bg-gray-200 dark:focus:bg-muted dark:data-[state=open]:bg-muted font-normal text-gray-700 dark:text-neutral-300">
 							Aide
 						</MenubarTrigger>
 						<MenubarContent>
@@ -303,10 +303,10 @@ const TitleBar = ({
 								Raccourcis clavier{" "}
 								<MenubarShortcut>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+K
+										Ctrl + K
 									</kbd>
 									<kbd className="px-2 py-1 bg-muted rounded border border-border">
-										Ctrl+S
+										Ctrl + S
 									</kbd>
 								</MenubarShortcut>
 							</MenubarItem>
@@ -323,14 +323,14 @@ const TitleBar = ({
 								<Button
 									variant={"ghost"}
 									size={"icon"}
-									className="h-7 w-7"
+									className="h-7 w-7 hover:bg-neutral-200"
 									onClick={onUndo}
 								>
 									<ArrowLeft className="h-4 w-4 text-gray-600 dark:text-muted-foreground" />
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent>
-								<p>Annuler</p>
+								<p>Précédent</p>
 							</TooltipContent>
 						</Tooltip>
 					</TooltipProvider>
@@ -340,14 +340,14 @@ const TitleBar = ({
 								<Button
 									variant={"ghost"}
 									size={"icon"}
-									className="h-7 w-7"
+									className="h-7 w-7 hover:bg-neutral-200"
 									onClick={onRedo}
 								>
 									<ArrowRight className="h-4 w-4 text-gray-600 dark:text-muted-foreground" />
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent>
-								<p>Rétablir</p>
+								<p>Suivant</p>
 							</TooltipContent>
 						</Tooltip>
 					</TooltipProvider>
@@ -369,9 +369,9 @@ const TitleBar = ({
 								<Button
 									variant={"ghost"}
 									size={"icon"}
-									className="h-7 w-7"
+									className="h-7 w-7 hover:bg-neutral-200"
 								>
-									<FaBolt className="h-3.5 w-3.5 text-gray-600 dark:text-muted-foreground" />
+									<FaBolt className="h-3.5 w-3.5 text-neutral-600 dark:text-muted-foreground" />
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent>
