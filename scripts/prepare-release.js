@@ -96,7 +96,7 @@ async function runRelease(version, type) {
 
 		console.log("\n✅ Workflow de release déclenché avec succès!");
 		console.log(
-			"   Suivez la progression sur GitHub: https://github.com/[owner]/codemaker/actions",
+			"   Suivez la progression sur GitHub: https://github.com/SlowSnakPierre/codemaker/actions",
 		);
 	} catch (error) {
 		console.error(
