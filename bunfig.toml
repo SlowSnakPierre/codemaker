@@ -1,0 +1,30 @@
+# Configuration Bun pour le projet Codemaker
+
+[install]
+# Autoriser les dépendances optionnelles à échouer, utile avec des paquets natifs qui pourraient échouer sur certaines plateformes
+optional = true
+
+# Définir le registre pour les paquets NPM
+registry = "https://registry.npmjs.org"
+
+# Utiliser des liens symboliques pour les paquets locaux
+# Utile pour développer des packages en parallèle
+symlinks = true
+
+[run]
+# Environnement de développement par défaut
+env = { "NODE_ENV" = "development" }
+
+[test]
+# Configuration des tests
+coverage = true
+# Ignorer certains dossiers dans les tests
+ignore = ["**/node_modules/**", "**/dist/**"]
+
+[debug]
+# Configuration du débogueur intégré
+port = 9229
+
+# Installation automatique des types TypeScript lorsque nécessaire
+[install.typescript]
+enabled = true

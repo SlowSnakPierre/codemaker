@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Codemaker
 
-## Getting Started
-
-First, run the development server:
+Un### Démarrage rapide
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Installer les dépendances
+bun install
+
+# Lancer l'application en mode développement
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+L'application démarre automatiquement une fenêtre Electron avec l'interface Next.js.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+````bash
+# Créer un exécutable pour votre système
+bun run build
+```IDE) moderne construit avec Electron et Next.js, inspiré par VS Code et Bolt.
 
-## Learn More
+## Fonctionnalités
 
-To learn more about Next.js, take a look at the following resources:
+- Interface utilisateur moderne basée sur Next.js et TailwindCSS
+- Éditeur de code Monaco (utilisé dans VS Code)
+- Support multi-fichiers et multi-onglets
+- Explorateur de fichiers
+- Thèmes clairs et sombres
+- Application bureau avec Electron pour Windows, macOS et Linux
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Démarrage rapide
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Développement
 
-## Deploy on Vercel
+```bash
+# Installer les dépendances
+npm install
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Lancer l'application en mode développement
+npm run dev
+````
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+L'application démarre automatiquement une fenêtre Electron avec l'interface Next.js.
+
+### Build
+
+```bash
+# Créer un exécutable pour votre système
+npm run build
+```
+
+Les fichiers de sortie se trouvent dans le dossier `dist`.
+
+## Workflow de développement
+
+Ce projet utilise GitHub Flow pour la gestion du code:
+
+1. Créez une branche depuis `main` pour chaque fonctionnalité/correction
+2. Développez et testez vos modifications
+3. Créez une Pull Request vers `main`
+4. Après revue et approbation, la PR est fusionnée dans `main`
+
+### Règles de commit
+
+Nous utilisons la convention [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` - Nouvelle fonctionnalité
+- `fix:` - Correction de bug
+- `docs:` - Documentation
+- `style:` - Formatage, pas de changement fonctionnel
+- `refactor:` - Refactoring de code
+- `perf:` - Amélioration des performances
+- `test:` - Ajout ou correction de tests
+- `build:` - Changements affectant le système de build
+- `ci:` - Changements de configuration CI
+- `chore:` - Autres changements qui ne modifient pas le code source
+
+### Releases
+
+Pour créer une nouvelle version:
+
+```bash
+# Créer une version patch (0.0.x)
+bun run release
+
+# Créer une version mineure (0.x.0)
+bun run release minor
+
+# Créer une version majeure (x.0.0)
+bun run release major
+
+# Créer une version pre-release (beta)
+bun run release patch beta
+```
+
+## Structure du projet
+
+- `/electron` - Code Electron (main process)
+- `/src` - Code React/Next.js (renderer process)
+    - `/app` - Routes et layouts Next.js
+    - `/components` - Composants React
+    - `/lib` - Utilitaires et fonctions
+    - `/hooks` - Hooks React personnalisés

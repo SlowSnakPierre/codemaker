@@ -5,7 +5,7 @@
 	"type": "module",
 	"main": "electron/main.js",
 	"scripts": {
-		"dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"npm run next:dev\" \"npm run electron:dev\"",
+		"dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"bun run next:dev\" \"bun run electron:dev\"",
 		"next:dev": "next dev --turbo",
 		"electron:dev": "electron .",
 		"build": "next build && electron-builder",
@@ -15,7 +15,12 @@
 		"format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
 		"lint": "next lint",
 		"lint:fix": "next lint --fix",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"validate": "bun run typecheck && bun run lint && bun run format:check",
+		"prepare": "husky install",
+		"release": "bun scripts/prepare-release.js",
+		"new-branch": "bun scripts/create-branch.js",
+		"new-pr": "bun scripts/create-pr.js"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.0.1",
@@ -73,6 +78,8 @@
 		"zod": "^3.25.7"
 	},
 	"devDependencies": {
+		"@commitlint/cli": "^19.8.1",
+		"@commitlint/config-conventional": "^19.8.1",
 		"@eslint/eslintrc": "^3",
 		"@tailwindcss/postcss": "^4",
 		"@types/node": "^20",
@@ -83,6 +90,9 @@
 		"eslint": "^9",
 		"eslint-config-next": "15.3.2",
 		"eslint-config-prettier": "^10.1.5",
+		"husky": "^8.0.0",
+		"lint-staged": "^15.2.2",
+		"prettier": "^3.5.3",
 		"tailwindcss": "^4",
 		"tw-animate-css": "^1.3.0",
 		"typescript": "^5",

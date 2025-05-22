@@ -1,0 +1,37 @@
+ui:
+    - src/components/ui/**/*
+
+electron:
+    - electron/**/*
+
+components:
+    - src/components/**/*
+    - "!src/components/ui/**/*"
+
+workflow:
+    - .github/**/*
+
+configuration:
+    - "*.config.*"
+    - tsconfig.json
+    - package.json
+
+documentation:
+    - "**/*.md"
+    - docs/**/*
+
+tests:
+    - "**/*.test.*"
+    - "**/*.spec.*"
+    - e2e/**/*
+
+dependencies:
+    - package.json
+    - package-lock.json
+
+hooks:
+    - src/hooks/**/*
+
+types:
+    - "**/*.d.ts"
+    - src/lib/types.ts
