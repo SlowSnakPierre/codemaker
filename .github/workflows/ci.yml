@@ -12,6 +12,8 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+              with:
+                  token: ${{ secrets.RELEASE_TOKEN }}
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
@@ -39,6 +41,8 @@ jobs:
             security-events: write
         steps:
             - uses: actions/checkout@v4
+              with:
+                  token: ${{ secrets.RELEASE_TOKEN }}
 
             - name: Initialize CodeQL
               uses: github/codeql-action/init@v3
