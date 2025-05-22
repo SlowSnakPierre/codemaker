@@ -13,13 +13,10 @@ export default function DebugPage() {
 		null
 	);
 
-	const [_, setIsClient] = useState(false);
-
 	const isElectron = typeof window !== "undefined" && window.electron;
 
 	useEffect(() => {
 		if (isElectron) {
-			setIsClient(true);
 			window.electron
 				.getSettings("lastOpenDirectory")
 				.then((dir: string) => {
