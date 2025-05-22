@@ -1,4 +1,4 @@
-﻿name: Desktop App Build
+name: Desktop App Build
 
 on:
     push:
@@ -15,7 +15,7 @@ on:
             tag:
                 required: false
                 type: string
-                description: "Tag de version Ã  construire"
+                description: "Tag de version à construire"
             debug:
                 required: false
                 type: boolean
@@ -102,10 +102,11 @@ jobs:
                   DEBUG_BUILD: ${{ inputs.debug || 'false' }}
                   CSC_IDENTITY_AUTO_DISCOVERY: false
                   ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/electron-builder
-                  # Optimisations pour electron-builder
                   ELECTRON_BUILDER_COMPRESSION: maximum
                   ELECTRON_BUILDER_COMPRESSION_LEVEL: 9
-                  ELECTRON_ENABLE_LOGGING: 1 # Compression des artefacts avant l'upload
+                  ELECTRON_ENABLE_LOGGING: 1
+
+            # Compression des artefacts avant l'upload
             - name: Compress Windows artifacts
               if: matrix.os == 'windows-latest'
               shell: pwsh
@@ -118,7 +119,6 @@ jobs:
               run: |
                   cd dist
                   zip -j macos-artifacts.zip *.dmg latest-mac.yml
-                  mv macos-artifacts.zip ../dist/
 
             - name: Compress Linux artifacts
               if: matrix.os == 'ubuntu-latest'
@@ -126,7 +126,6 @@ jobs:
               run: |
                   cd dist
                   zip -j linux-artifacts.zip *.AppImage latest-linux.yml
-                  mv linux-artifacts.zip ../dist/
 
             - name: Upload Windows artifacts
               if: matrix.os == 'windows-latest'
