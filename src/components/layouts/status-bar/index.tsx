@@ -134,7 +134,7 @@ const StatusBar = ({
 		if (!searchQuery) return availableLanguages;
 
 		return availableLanguages.filter((lang) =>
-			lang.toLowerCase().includes(searchQuery.toLowerCase())
+			lang.toLowerCase().includes(searchQuery.toLowerCase()),
 		);
 	}, [searchQuery]);
 
@@ -242,7 +242,7 @@ const StatusBar = ({
 													e.preventDefault();
 													onLanguageChange("auto");
 													setIsLanguageMenuOpen(
-														false
+														false,
 													);
 												}}
 											>
@@ -268,7 +268,7 @@ const StatusBar = ({
 														e.preventDefault();
 														onLanguageChange(lang);
 														setIsLanguageMenuOpen(
-															false
+															false,
 														);
 													}}
 												>

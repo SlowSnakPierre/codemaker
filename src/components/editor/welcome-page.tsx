@@ -177,11 +177,11 @@ const WelcomePage: React.FC<WelcomePageProps> = ({
 																recentProjects.length -
 																	1
 																? "border-b border-border/40"
-																: ""
+																: "",
 														)}
 														onClick={() =>
 															onSpecificDirectoryOpen(
-																project.path
+																project.path,
 															)
 														}
 													>
@@ -204,7 +204,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({
 													<RelativeTime
 														date={
 															new Date(
-																project.lastOpened
+																project.lastOpened,
 															)
 														}
 													/>

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 export default function DebugPage() {
 	const [currentDirectory, setCurrentDirectory] = useState<string | null>(
-		null
+		null,
 	);
 
 	const isElectron = typeof window !== "undefined" && window.electron;
@@ -25,7 +25,7 @@ export default function DebugPage() {
 						console.log("[DebugPage] Répertoire récupéré:", dir);
 					} else {
 						console.log(
-							"[DebugPage] Aucun répertoire ouvert récemment"
+							"[DebugPage] Aucun répertoire ouvert récemment",
 						);
 					}
 				});
@@ -35,7 +35,7 @@ export default function DebugPage() {
 	const handleSelectDirectory = async () => {
 		if (!isElectron) {
 			toast.error(
-				"Cette fonction n'est disponible que dans l'application Electron"
+				"Cette fonction n'est disponible que dans l'application Electron",
 			);
 			return;
 		}
@@ -50,7 +50,7 @@ export default function DebugPage() {
 			toast.error("Erreur lors de la sélection du répertoire");
 			console.error(
 				"[DebugPage] Erreur lors de la sélection du répertoire:",
-				error
+				error,
 			);
 		}
 	};

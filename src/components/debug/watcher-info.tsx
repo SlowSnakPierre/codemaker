@@ -20,7 +20,7 @@ interface WatcherInfoProps {
 
 export default function WatcherInfo({ directory }: WatcherInfoProps) {
 	const [watcherInfo, setWatcherInfo] = useState<WatcherInfoState | null>(
-		null
+		null,
 	);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -39,9 +39,8 @@ export default function WatcherInfo({ directory }: WatcherInfoProps) {
 		try {
 			const currentStatus = await window.electron.checkWatcherStatus();
 
-			const restartResult = await window.electron.restartWatcher(
-				directory
-			);
+			const restartResult =
+				await window.electron.restartWatcher(directory);
 
 			const newStatus = await window.electron.checkWatcherStatus();
 
@@ -52,19 +51,19 @@ export default function WatcherInfo({ directory }: WatcherInfoProps) {
 				timestamp: new Date().toLocaleTimeString(),
 				status: restartResult ? "actif" : "inactif",
 				lastWatcherDirectory: await window.electron.getSettings(
-					"lastWatcherDirectory"
+					"lastWatcherDirectory",
 				),
 				lastWatcherTimestamp: await window.electron.getSettings(
-					"lastWatcherTimestamp"
+					"lastWatcherTimestamp",
 				),
 			});
 		} catch (err) {
 			console.error(
 				"Erreur lors de la récupération des infos du watcher:",
-				err
+				err,
 			);
 			setError(
-				`Erreur: ${err instanceof Error ? err.message : String(err)}`
+				`Erreur: ${err instanceof Error ? err.message : String(err)}`,
 			);
 			setWatcherInfo(null);
 		} finally {
@@ -179,7 +178,7 @@ export default function WatcherInfo({ directory }: WatcherInfoProps) {
 								</dt>
 								<dd>
 									{new Date(
-										watcherInfo.lastWatcherTimestamp
+										watcherInfo.lastWatcherTimestamp,
 									).toLocaleString()}
 								</dd>
 							</div>

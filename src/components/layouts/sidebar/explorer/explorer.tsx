@@ -61,7 +61,7 @@ const Explorer = ({
 						return updateFilesWithChildren(
 							prevFiles,
 							normalizedPath,
-							contents
+							contents,
 						);
 					});
 				} catch (error) {
@@ -83,7 +83,7 @@ const Explorer = ({
 	const updateFilesWithChildren = (
 		files: FileData[],
 		targetPath: string,
-		children: FileData[]
+		children: FileData[],
 	): FileData[] => {
 		return files.map((file) => {
 			if (file.path === targetPath) {
@@ -94,7 +94,7 @@ const Explorer = ({
 					children: updateFilesWithChildren(
 						file.children,
 						targetPath,
-						children
+						children,
 					),
 				};
 			}
@@ -104,7 +104,7 @@ const Explorer = ({
 	useEffect(() => {
 		const loadAllExpandedFolders = async (
 			fileList: FileData[],
-			expanded: Record<string, boolean>
+			expanded: Record<string, boolean>,
 		) => {
 			const foldersToProcess = Object.keys(expanded)
 				.filter((path) => expanded[path])
@@ -118,7 +118,7 @@ const Explorer = ({
 
 			const findAndUpdateItem = async (
 				items: FileData[],
-				targetPath: string
+				targetPath: string,
 			): Promise<boolean> => {
 				const normalizedTargetPath = targetPath.replace(/\\/g, "/");
 
@@ -141,7 +141,7 @@ const Explorer = ({
 							try {
 								const contents =
 									await window.electron.readDirectory(
-										item.path
+										item.path,
 									);
 								if (contents) {
 									items[i] = { ...item, children: contents };
@@ -151,7 +151,7 @@ const Explorer = ({
 							} catch (error) {
 								console.error(
 									`Échec de chargement pour ${item.path}:`,
-									error
+									error,
 								);
 							}
 						}
@@ -162,12 +162,12 @@ const Explorer = ({
 						item.isDirectory &&
 						item.children &&
 						normalizedTargetPath.startsWith(
-							normalizedItemPath + "/"
+							normalizedItemPath + "/",
 						)
 					) {
 						const found = await findAndUpdateItem(
 							item.children,
-							targetPath
+							targetPath,
 						);
 						if (found) return true;
 					}
@@ -182,8 +182,8 @@ const Explorer = ({
 
 				await Promise.all(
 					batch.map((folderPath) =>
-						findAndUpdateItem(updatedFiles, folderPath)
-					)
+						findAndUpdateItem(updatedFiles, folderPath),
+					),
 				);
 			}
 
@@ -226,7 +226,7 @@ const Explorer = ({
 									onFileSelect={onFileSelect}
 									activeTab={activeTab}
 								/>
-							)
+							),
 						)
 					) : (
 						<div className="py-2 px-2 text-sm text-muted-foreground">

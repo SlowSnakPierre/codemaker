@@ -11,7 +11,7 @@ let watcherCheckInterval: NodeJS.Timeout | null = null;
  */
 export function startWatcherHealthCheck(
 	directory: string | null,
-	checkInterval: number = 30000
+	checkInterval: number = 30000,
 ): void {
 	if (watcherCheckInterval) {
 		clearInterval(watcherCheckInterval);
@@ -20,13 +20,13 @@ export function startWatcherHealthCheck(
 
 	if (!directory || typeof window === "undefined" || !window.electron) {
 		console.log(
-			"[WatcherHealth] Vérification désactivée: aucun répertoire ou pas d'environnement Electron"
+			"[WatcherHealth] Vérification désactivée: aucun répertoire ou pas d'environnement Electron",
 		);
 		return;
 	}
 
 	console.log(
-		`[WatcherHealth] Démarrage de la vérification du watcher pour ${directory}`
+		`[WatcherHealth] Démarrage de la vérification du watcher pour ${directory}`,
 	);
 
 	watcherCheckInterval = setInterval(() => {
@@ -36,8 +36,8 @@ export function startWatcherHealthCheck(
 			.catch((err) =>
 				console.error(
 					"[WatcherHealth] Erreur lors de la vérification du watcher:",
-					err
-				)
+					err,
+				),
 			);
 	}, checkInterval);
 }
@@ -59,28 +59,28 @@ export function stopWatcherHealthCheck(): void {
  * @returns Promise<boolean> Indique si le redémarrage a réussi
  */
 export async function forceRestartWatcher(
-	directory: string | null
+	directory: string | null,
 ): Promise<boolean> {
 	if (!directory || typeof window === "undefined" || !window.electron) {
 		console.error(
-			"[WatcherHealth] Impossible de redémarrer le watcher: aucun répertoire ou pas d'environnement Electron"
+			"[WatcherHealth] Impossible de redémarrer le watcher: aucun répertoire ou pas d'environnement Electron",
 		);
 		return false;
 	}
 
 	try {
 		console.log(
-			`[WatcherHealth] Forçage du redémarrage du watcher pour ${directory}`
+			`[WatcherHealth] Forçage du redémarrage du watcher pour ${directory}`,
 		);
 		const result = await window.electron.restartWatcher(directory);
 		console.log(
-			`[WatcherHealth] Redémarrage forcé ${result ? "réussi" : "échoué"}`
+			`[WatcherHealth] Redémarrage forcé ${result ? "réussi" : "échoué"}`,
 		);
 		return result;
 	} catch (error) {
 		console.error(
 			"[WatcherHealth] Erreur lors du forçage du redémarrage du watcher:",
-			error
+			error,
 		);
 		return false;
 	}

@@ -67,7 +67,7 @@ export default function EditorPanel({
 	useEffect(() => {
 		if (tabsRef.current && activeTabId) {
 			const activeTabElement = tabsRef.current.querySelector(
-				`[data-tab-id="${activeTabId}"]`
+				`[data-tab-id="${activeTabId}"]`,
 			);
 			if (activeTabElement) {
 				activeTabElement.scrollIntoView({
@@ -94,7 +94,7 @@ export default function EditorPanel({
 											"flex items-center h-9 px-4 border-r border-border cursor-pointer group whitespace-nowrap transition-colors",
 											tab.id === activeTabId
 												? "bg-background text-foreground"
-												: "bg-muted text-muted-foreground hover:bg-muted/80"
+												: "bg-muted text-muted-foreground hover:bg-muted/80",
 										)}
 										onClick={() => onTabClick(tab.id)}
 									>

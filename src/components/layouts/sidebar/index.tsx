@@ -45,7 +45,7 @@ export default function Sidebar({
 		(
 			files: FileData[],
 			targetPath: string,
-			newChildren: FileData[]
+			newChildren: FileData[],
 		): FileData[] => {
 			return files.map((file) => {
 				if (file.path === targetPath) {
@@ -56,14 +56,14 @@ export default function Sidebar({
 						children: updateNestedFilesWithChildren(
 							file.children,
 							targetPath,
-							newChildren
+							newChildren,
 						),
 					};
 				}
 				return file;
 			});
 		},
-		[]
+		[],
 	);
 
 	const updateFilesTree = useCallback(
@@ -73,7 +73,7 @@ export default function Sidebar({
 			if (normalizedPath === currentDirectory?.replace(/\\/g, "/")) {
 				setFiles(newContents);
 				console.log(
-					`Mise à jour du contenu racine avec ${newContents.length} éléments`
+					`Mise à jour du contenu racine avec ${newContents.length} éléments`,
 				);
 				return;
 			}
@@ -82,15 +82,15 @@ export default function Sidebar({
 				const updatedFiles = updateNestedFilesWithChildren(
 					prevFiles,
 					normalizedPath,
-					newContents
+					newContents,
 				);
 				console.log(
-					`Mise à jour de ${normalizedPath} avec ${newContents.length} éléments`
+					`Mise à jour de ${normalizedPath} avec ${newContents.length} éléments`,
 				);
 				return updatedFiles;
 			});
 		},
-		[currentDirectory, updateNestedFilesWithChildren]
+		[currentDirectory, updateNestedFilesWithChildren],
 	);
 
 	const refreshFolder = useCallback(
@@ -112,7 +112,7 @@ export default function Sidebar({
 						const foldersToRestore = { ...expandedFolders };
 
 						for (const [folderPath, isExpanded] of Object.entries(
-							foldersToRestore
+							foldersToRestore,
 						)) {
 							if (isExpanded) {
 								setExpandedFolders((prevState) => ({
@@ -121,7 +121,7 @@ export default function Sidebar({
 								}));
 
 								await new Promise((resolve) =>
-									setTimeout(resolve, 10)
+									setTimeout(resolve, 10),
 								);
 							}
 						}
@@ -133,7 +133,7 @@ export default function Sidebar({
 				} else {
 					if (showNotification) {
 						toast.error(
-							`Erreur lors du rafraîchissement: ${result.message}`
+							`Erreur lors du rafraîchissement: ${result.message}`,
 						);
 					}
 				}
@@ -148,7 +148,7 @@ export default function Sidebar({
 				}
 			}
 		},
-		[expandedFolders, isElectron, updateFilesTree]
+		[expandedFolders, isElectron, updateFilesTree],
 	);
 	const toggleFolder = useCallback((path: string) => {
 		const normalizedPath = path.replace(/\\/g, "/");
@@ -161,7 +161,7 @@ export default function Sidebar({
 
 			if (newValue) {
 				setManuallyClosedFolders((prev) =>
-					prev.filter((folder) => folder !== normalizedPath)
+					prev.filter((folder) => folder !== normalizedPath),
 				);
 			} else {
 				setManuallyClosedFolders((prev) => [...prev, normalizedPath]);
@@ -172,7 +172,7 @@ export default function Sidebar({
 	}, []);
 	const closeAllFolders = useCallback(() => {
 		const openedFolders = Object.keys(expandedFolders).filter(
-			(folder) => expandedFolders[folder]
+			(folder) => expandedFolders[folder],
 		);
 
 		const potentialRequiredFolders: string[] = [];
@@ -181,7 +181,7 @@ export default function Sidebar({
 			const normalizedCurrentDir = currentDirectory.replace(/\\/g, "/");
 
 			let relativePath = normalizedPath.slice(
-				normalizedCurrentDir.length
+				normalizedCurrentDir.length,
 			);
 			if (relativePath.startsWith("/")) {
 				relativePath = relativePath.substring(1);
@@ -244,7 +244,7 @@ export default function Sidebar({
 			const normalizedCurrentDir = currentDirectory.replace(/\\/g, "/");
 
 			let relativePath = normalizedPath.slice(
-				normalizedCurrentDir.length
+				normalizedCurrentDir.length,
 			);
 			if (relativePath.startsWith("/")) {
 				relativePath = relativePath.substring(1);
@@ -261,7 +261,7 @@ export default function Sidebar({
 				pathsToProcess.push(currentPathBuild);
 			}
 			const expandedPaths = Object.keys(expandedFolders).filter(
-				(path) => expandedFolders[path]
+				(path) => expandedFolders[path],
 			);
 
 			const pathsToLoad = pathsToProcess.filter((path) => {
@@ -280,10 +280,10 @@ export default function Sidebar({
 						} catch (error) {
 							console.error(
 								`Erreur de chargement: ${path}`,
-								error
+								error,
 							);
 						}
-					})
+					}),
 				);
 
 				await new Promise((resolve) => setTimeout(resolve, 100));
@@ -299,7 +299,7 @@ export default function Sidebar({
 				...foldersToExpand,
 			}));
 		},
-		[currentDirectory, isElectron, updateFilesTree, expandedFolders]
+		[currentDirectory, isElectron, updateFilesTree, expandedFolders],
 	);
 
 	useEffect(() => {
@@ -384,7 +384,7 @@ export default function Sidebar({
 			const normalizedCurrentDir = currentDirectory.replace(/\\/g, "/");
 
 			let relativePath = normalizedPath.slice(
-				normalizedCurrentDir.length
+				normalizedCurrentDir.length,
 			);
 			if (relativePath.startsWith("/")) {
 				relativePath = relativePath.substring(1);
@@ -424,11 +424,11 @@ export default function Sidebar({
 				const normalizedPath = activeTab.path.replace(/\\/g, "/");
 				const normalizedCurrentDir = currentDirectory?.replace(
 					/\\/g,
-					"/"
+					"/",
 				);
 
 				let relativePath = normalizedPath.slice(
-					normalizedCurrentDir?.length
+					normalizedCurrentDir?.length,
 				);
 				if (relativePath.startsWith("/")) {
 					relativePath = relativePath.substring(1);
@@ -446,7 +446,7 @@ export default function Sidebar({
 				}
 
 				const expandedPaths = Object.keys(expandedFolders).filter(
-					(path) => expandedFolders[path]
+					(path) => expandedFolders[path],
 				);
 
 				if (requiredFolders.length === 0) {
@@ -481,7 +481,7 @@ export default function Sidebar({
 				} catch (error) {
 					console.error(
 						"Erreur lors de l'expansion des dossiers:",
-						error
+						error,
 					);
 				}
 			}

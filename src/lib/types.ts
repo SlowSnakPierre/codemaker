@@ -67,7 +67,7 @@ export interface ElectronAPI {
 	checkWatcherStatus: () => Promise<boolean>;
 	onFileChanged: (callback: (event: FileChangeEvent) => void) => void;
 	removeFileChangedListener: (
-		callback: (event: FileChangeEvent) => void
+		callback: (event: FileChangeEvent) => void,
 	) => void;
 
 	minimizeWindow: () => Promise<void>;
@@ -85,7 +85,7 @@ export interface ElectronAPI {
 
 	runCommand: (
 		command: string,
-		options: { cwd: string }
+		options: { cwd: string },
 	) => Promise<string | null>;
 }
 

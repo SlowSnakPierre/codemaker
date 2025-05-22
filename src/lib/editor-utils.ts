@@ -78,7 +78,7 @@ export function createTab(
 	path: string | null,
 	content: string,
 	language: string,
-	languageOverride?: string | null
+	languageOverride?: string | null,
 ): FileTab {
 	return {
 		id,
@@ -109,7 +109,7 @@ export function updateTabContent(
 	tabs: FileTab[],
 	tabId: string,
 	newContent: string,
-	isExternalUpdate = false
+	isExternalUpdate = false,
 ): FileTab[] {
 	return tabs.map((tab) => {
 		if (tab.id === tabId) {
@@ -136,7 +136,7 @@ export function updateTabContent(
 export function syncFileContent(
 	tabs: FileTab[],
 	path: string,
-	newContent: string
+	newContent: string,
 ): FileTab[] {
 	return tabs.map((tab) => {
 		if (tab.path === path) {

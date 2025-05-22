@@ -55,7 +55,7 @@ const PageSelector = ({}: Props) => {
 										{
 											"after:absolute after:left-0 after:top-0 after:h-full after:w-0.5 after:bg-blue-500":
 												activeItem === item.id,
-										}
+										},
 									)}
 									onClick={() => handleClick(item.id)}
 								>
@@ -64,7 +64,7 @@ const PageSelector = ({}: Props) => {
 											"group-hover/button:text-neutral-700 group-hover/button:dark:text-white size-6",
 											activeItem === item.id
 												? "text-neutral-700 dark:text-white"
-												: "text-neutral-500 dark:text-neutral-400"
+												: "text-neutral-500 dark:text-neutral-400",
 										)}
 									/>
 								</Button>
@@ -74,7 +74,7 @@ const PageSelector = ({}: Props) => {
 							</TooltipContent>
 						</Tooltip>
 					</TooltipProvider>
-				)
+				),
 			)}
 
 			<div className="flex-grow"></div>
@@ -93,7 +93,7 @@ const PageSelector = ({}: Props) => {
 										{
 											"after:absolute after:left-0 after:top-0 after:h-full after:w-0.5 after:bg-blue-500":
 												activeItem === item.id,
-										}
+										},
 									)}
 									onClick={() => handleClick(item.id)}
 								>
@@ -102,7 +102,7 @@ const PageSelector = ({}: Props) => {
 											"group-hover/button:text-neutral-700 group-hover/button:dark:text-white size-6",
 											activeItem === item.id
 												? "text-neutral-700 dark:text-white"
-												: "text-neutral-500 dark:text-neutral-400"
+												: "text-neutral-500 dark:text-neutral-400",
 										)}
 									/>
 								</Button>

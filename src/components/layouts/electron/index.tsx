@@ -37,7 +37,7 @@ const ElectronLayout = () => {
 	const [activeTab, setActiveTab] = useState<string | null>(null);
 	const [tabs, setTabs] = useState<FileTab[]>([]);
 	const [currentDirectory, setCurrentDirectory] = useState<string | null>(
-		null
+		null,
 	);
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 	const [cursorPosition, setCursorPosition] = useState({
@@ -63,7 +63,7 @@ const ElectronLayout = () => {
 				console.error("Failed to save recent projects:", error);
 			}
 		},
-		[isElectron]
+		[isElectron],
 	);
 
 	const addRecentProject = async (directoryPath: string) => {
@@ -79,11 +79,11 @@ const ElectronLayout = () => {
 
 			setRecentProjects((prevProjects) => {
 				const filteredProjects = prevProjects.filter(
-					(p) => p.path !== directoryPath
+					(p) => p.path !== directoryPath,
 				);
 				const updatedProjects = [newProject, ...filteredProjects].slice(
 					0,
-					10
+					10,
 				);
 				savedRecentProjects(updatedProjects);
 				return updatedProjects;
@@ -107,7 +107,7 @@ const ElectronLayout = () => {
 				const fileName = path.split(/[/\\]/).pop() || "Untitled";
 				if (tabs.some((tab) => tab.path === path)) {
 					setActiveTab(
-						tabs.find((tab) => tab.path === path)?.id || null
+						tabs.find((tab) => tab.path === path)?.id || null,
 					);
 					return;
 				}
@@ -144,7 +144,7 @@ const ElectronLayout = () => {
 				setCurrentDirectory(dirPath);
 				await addRecentProject(dirPath);
 				toast.success(
-					`Opened directory: ${dirPath.split(/[/\\]/).pop()}`
+					`Opened directory: ${dirPath.split(/[/\\]/).pop()}`,
 				);
 			}
 		} catch (error) {
@@ -164,7 +164,7 @@ const ElectronLayout = () => {
 				.restartWatcher(dir)
 				.then(() => console.log("Watcher redémarré pour:", dir))
 				.catch((err) =>
-					console.error("Échec du redémarrage du watcher:", err)
+					console.error("Échec du redémarrage du watcher:", err),
 				);
 
 			toast.success(`Opened directory: ${dir.split(/[/\\]/).pop()}`);
@@ -192,18 +192,18 @@ const ElectronLayout = () => {
 
 		if (tab.externallyModified && tab.path) {
 			const confirmSave = window.confirm(
-				`Le fichier "${tab.name}" a été modifié en dehors de l'éditeur. Voulez-vous vraiment l'écraser ?`
+				`Le fichier "${tab.name}" a été modifié en dehors de l'éditeur. Voulez-vous vraiment l'écraser ?`,
 			);
 
 			if (!confirmSave) {
 				const confirmReload = window.confirm(
-					"Voulez-vous recharger le fichier depuis le disque ?"
+					"Voulez-vous recharger le fichier depuis le disque ?",
 				);
 
 				if (confirmReload) {
 					try {
 						const content = await window.electron.readFile(
-							tab.path
+							tab.path,
 						);
 						if (content !== null) {
 							setTabs((prevTabs) =>
@@ -215,15 +215,15 @@ const ElectronLayout = () => {
 												originalContent: content,
 												modified: false,
 												externallyModified: false,
-										  }
-										: t
-								)
+											}
+										: t,
+								),
 							);
 							toast.success(`Fichier ${tab.name} rechargé`);
 						}
 					} catch (error) {
 						toast.error(
-							`Impossible de recharger le fichier ${tab.name}`
+							`Impossible de recharger le fichier ${tab.name}`,
 						);
 						console.error(error);
 					}
@@ -250,9 +250,9 @@ const ElectronLayout = () => {
 									modified: false,
 									externallyModified: false,
 									originalContent: t.content,
-							  }
-							: t
-					)
+								}
+							: t,
+					),
 				);
 				toast.success(`Sauvegardé: ${fileName}`);
 			}
@@ -268,7 +268,7 @@ const ElectronLayout = () => {
 			prevTabs.map((tab) => ({
 				...tab,
 				active: tab.id === tabId,
-			}))
+			})),
 		);
 	};
 
@@ -293,7 +293,7 @@ const ElectronLayout = () => {
 			if (isActiveTab && filtered.length > 0) {
 				const newActiveIndex = Math.min(
 					prevTabs.findIndex((tab) => tab.id === tabId),
-					filtered.length - 1
+					filtered.length - 1,
 				);
 				filtered[newActiveIndex].active = true;
 				setActiveTab(filtered[newActiveIndex].id);
@@ -318,7 +318,7 @@ const ElectronLayout = () => {
 					};
 				}
 				return tab;
-			})
+			}),
 		);
 	};
 
@@ -328,7 +328,7 @@ const ElectronLayout = () => {
 
 		if (tabs.some((tab) => tab.path == fileData.path)) {
 			setActiveTab(
-				tabs.find((tab) => tab.path === fileData.path)?.id || null
+				tabs.find((tab) => tab.path === fileData.path)?.id || null,
 			);
 			return;
 		}
@@ -385,7 +385,7 @@ const ElectronLayout = () => {
 					};
 				}
 				return tab;
-			})
+			}),
 		);
 	};
 
@@ -410,7 +410,7 @@ const ElectronLayout = () => {
 								return { ...tab, modified: !isOriginalContent };
 							}
 							return tab;
-						})
+						}),
 					);
 				}
 			}, 0);
@@ -438,7 +438,7 @@ const ElectronLayout = () => {
 								return { ...tab, modified: !isOriginalContent };
 							}
 							return tab;
-						})
+						}),
 					);
 				}
 			}, 0);
@@ -472,9 +472,8 @@ const ElectronLayout = () => {
 			if (!isElectron) return;
 
 			try {
-				const savedRecentProjects = await window.electron.getSettings(
-					"recentProjects"
-				);
+				const savedRecentProjects =
+					await window.electron.getSettings("recentProjects");
 				if (savedRecentProjects && Array.isArray(savedRecentProjects)) {
 					setRecentProjects(savedRecentProjects);
 				}
@@ -499,13 +498,13 @@ const ElectronLayout = () => {
 						window.electron
 							.restartWatcher(dir)
 							.then(() =>
-								console.log("Watcher redémarré pour:", dir)
+								console.log("Watcher redémarré pour:", dir),
 							)
 							.catch((err) =>
 								console.error(
 									"Échec du redémarrage du watcher:",
-									err
-								)
+									err,
+								),
 							);
 					}
 				});
@@ -561,7 +560,7 @@ const ElectronLayout = () => {
 		window.electron
 			.restartWatcher(currentDirectory)
 			.catch((err) =>
-				console.error("Erreur lors du redémarrage du watcher:", err)
+				console.error("Erreur lors du redémarrage du watcher:", err),
 			);
 
 		const handleFileChange = (data: FileChangeEvent) => {
@@ -575,9 +574,9 @@ const ElectronLayout = () => {
 								? {
 										...t,
 										externallyModified: true,
-								  }
-								: t
-						)
+									}
+								: t,
+						),
 					);
 
 					toast.info(
@@ -590,7 +589,7 @@ const ElectronLayout = () => {
 										try {
 											const content =
 												await window.electron.readFile(
-													data.path
+													data.path,
 												);
 											if (content !== null) {
 												setTabs((prevTabs) =>
@@ -605,24 +604,24 @@ const ElectronLayout = () => {
 																		false,
 																	externallyModified:
 																		false,
-															  }
-															: t
-													)
+																}
+															: t,
+													),
 												);
 												toast.success(
-													`Fichier ${fileName} rechargé`
+													`Fichier ${fileName} rechargé`,
 												);
 											}
 										} catch (error) {
 											toast.error(
-												`Impossible de recharger le fichier ${fileName}`
+												`Impossible de recharger le fichier ${fileName}`,
 											);
 											console.error(error);
 										}
 									})();
 								},
 							},
-						}
+						},
 					);
 				}
 			}
@@ -635,25 +634,25 @@ const ElectronLayout = () => {
 							label: "Fermer l'onglet",
 							onClick: () => {
 								const isActiveTab = tabs.find(
-									(tab) => tab.id === tabToUpdate.id
+									(tab) => tab.id === tabToUpdate.id,
 								)?.active;
 
 								setTabs((prevTabs) => {
 									const filtered = prevTabs.filter(
-										(tab) => tab.id !== tabToUpdate.id
+										(tab) => tab.id !== tabToUpdate.id,
 									);
 
 									if (isActiveTab && filtered.length > 0) {
 										const newActiveIndex = Math.min(
 											prevTabs.findIndex(
 												(tab) =>
-													tab.id === tabToUpdate.id
+													tab.id === tabToUpdate.id,
 											),
-											filtered.length - 1
+											filtered.length - 1,
 										);
 										filtered[newActiveIndex].active = true;
 										setActiveTab(
-											filtered[newActiveIndex].id
+											filtered[newActiveIndex].id,
 										);
 									} else if (filtered.length === 0) {
 										setActiveTab(null);
@@ -672,9 +671,9 @@ const ElectronLayout = () => {
 										...t,
 										modified: true,
 										externallyModified: true,
-								  }
-								: t
-						)
+									}
+								: t,
+						),
 					);
 				}
 			}
@@ -694,9 +693,8 @@ const ElectronLayout = () => {
 			console.log(directoryPath);
 
 			try {
-				const result = await window.electron.directoryExists(
-					directoryPath
-				);
+				const result =
+					await window.electron.directoryExists(directoryPath);
 				console.log(result);
 				return result;
 			} catch (error) {
@@ -762,7 +760,7 @@ const ElectronLayout = () => {
 								onDirectoryOpen={handleDirectoryOpen}
 								onDirectoryClose={handleDirectoryClose}
 								activeTab={tabs.find(
-									(tab) => tab.id === activeTab
+									(tab) => tab.id === activeTab,
 								)}
 							/>
 						</ResizablePanel>

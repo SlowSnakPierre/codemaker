@@ -155,7 +155,7 @@ export default function FolderItem({
 									onFileSelect={onFileSelect}
 									activeTab={activeTab}
 								/>
-							)
+							),
 						)
 					)}
 				</div>

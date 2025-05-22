@@ -31,7 +31,7 @@ function startWatcher(directory) {
 	// Vérifier si le répertoire existe
 	if (!fs.existsSync(directory)) {
 		console.error(
-			`[Watcher] ERREUR: Le répertoire ${directory} n'existe pas ou est inaccessible`
+			`[Watcher] ERREUR: Le répertoire ${directory} n'existe pas ou est inaccessible`,
 		);
 		return false;
 	}
@@ -45,7 +45,7 @@ function startWatcher(directory) {
 		} catch (error) {
 			console.error(
 				"[Watcher] Erreur lors de la fermeture du watcher existant:",
-				error
+				error,
 			);
 		}
 	}
@@ -101,13 +101,13 @@ function startWatcher(directory) {
 
 			if (pathCount === 0) {
 				console.warn(
-					"[Watcher] ATTENTION: Aucun chemin n'est surveillé!"
+					"[Watcher] ATTENTION: Aucun chemin n'est surveillé!",
 				);
 			} else {
 				// Afficher les premiers chemins surveillés (limité à 5)
 				console.log(
 					"[Watcher] Exemples de chemins surveillés:",
-					Object.keys(watchedPaths).slice(0, 5).join(", ")
+					Object.keys(watchedPaths).slice(0, 5).join(", "),
 				);
 			}
 
@@ -162,7 +162,7 @@ app.whenReady().then(() => {
 	const lastOpenDirectory = store.get("lastOpenDirectory");
 	if (lastOpenDirectory) {
 		console.log(
-			`[Main] Restauration du watcher pour le dernier répertoire: ${lastOpenDirectory}`
+			`[Main] Restauration du watcher pour le dernier répertoire: ${lastOpenDirectory}`,
 		);
 		setTimeout(() => startWatcher(lastOpenDirectory), 1500); // Délai pour s'assurer que l'application est prête
 	}
@@ -234,7 +234,7 @@ ipcMain.handle(
 						{ name: "JSON", extensions: ["json"] },
 						{ name: "Markdown", extensions: ["md", "markdown"] },
 					],
-				}
+				},
 			);
 			if (canceled) return null;
 			filePath = newPath;
@@ -242,7 +242,7 @@ ipcMain.handle(
 
 		fs.writeFileSync(filePath, content, "utf8");
 		return filePath;
-	}
+	},
 );
 
 // Opérations sur le système de fichiers
@@ -426,7 +426,7 @@ function checkWatcherStatus() {
 	} catch (error) {
 		console.error(
 			"[Watcher] Erreur lors de la vérification de l'état:",
-			error
+			error,
 		);
 		return false;
 	}

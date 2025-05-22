@@ -35,9 +35,8 @@ export default function WatcherStatus({
 			setChecking(true);
 
 			try {
-				const result = await window.electron.restartWatcher(
-					currentDirectory
-				);
+				const result =
+					await window.electron.restartWatcher(currentDirectory);
 				setWatcherActive(result);
 
 				if (!result) {
@@ -46,7 +45,7 @@ export default function WatcherStatus({
 			} catch (error) {
 				console.error(
 					"[WatcherStatus] Erreur lors de la vérification du watcher:",
-					error
+					error,
 				);
 				setWatcherActive(false);
 			} finally {
@@ -101,8 +100,8 @@ export default function WatcherStatus({
 						{checking
 							? "Vérification..."
 							: watcherActive
-							? "Watcher actif"
-							: "Watcher inactif"}
+								? "Watcher actif"
+								: "Watcher inactif"}
 					</Badge>
 				</TooltipTrigger>
 				<TooltipContent side="top">

@@ -296,7 +296,7 @@ const TitleBar = ({
 							<MenubarItem
 								onClick={() =>
 									toast.error(
-										"Les raccourcis clavier ne sont pas encore implémentés"
+										"Les raccourcis clavier ne sont pas encore implémentés",
 									)
 								}
 							>

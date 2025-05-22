@@ -3,7 +3,7 @@ export function getFileIcon(fileName: string) {
 
 	if (
 		["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "ico"].includes(
-			extension
+			extension,
 		)
 	) {
 		return "image";
@@ -27,7 +27,7 @@ export function getFileIcon(fileName: string) {
 
 	if (
 		["json", "yaml", "yml", "toml", "ini", "conf", "config"].includes(
-			extension
+			extension,
 		)
 	) {
 		return "file-json";
@@ -73,7 +73,7 @@ export function getFileIconColor(fileName: string) {
 
 	if (
 		["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "ico"].includes(
-			extension
+			extension,
 		)
 	) {
 		return "text-green-400";

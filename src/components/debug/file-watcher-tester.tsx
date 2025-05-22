@@ -131,7 +131,7 @@ export default function FileWatcherTester({
 				`Remove-Item -Path "${filePath}" -Force`,
 				{
 					cwd: directory,
-				}
+				},
 			);
 
 			toast.success(`Fichier supprimé: ${newFileName}`);
@@ -283,7 +283,7 @@ export default function FileWatcherTester({
 										<td className="p-2 text-xs">
 											<span
 												className={`font-mono ${getEventTypeColor(
-													event.type
+													event.type,
 												)}`}
 											>
 												{event.type}

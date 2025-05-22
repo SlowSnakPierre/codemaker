@@ -60,7 +60,7 @@ const SidebarDialogs = ({
 				setIsCreatingFile(false);
 			} else {
 				toast.error(
-					`Erreur lors de la création du fichier: ${result.message}`
+					`Erreur lors de la création du fichier: ${result.message}`,
 				);
 			}
 		} catch (error) {
@@ -88,7 +88,7 @@ const SidebarDialogs = ({
 				setIsCreatingFolder(false);
 			} else {
 				toast.error(
-					`Erreur lors de la création du dossier: ${result.message}`
+					`Erreur lors de la création du dossier: ${result.message}`,
 				);
 			}
 		} catch (error) {
