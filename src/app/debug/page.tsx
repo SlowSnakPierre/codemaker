@@ -72,7 +72,6 @@ export default function DebugPage() {
 				<Card className="mb-6 border-yellow-500 dark:border-yellow-700">
 					<CardContent className="pt-6">
 						<p className="text-yellow-600 dark:text-yellow-400">
-							{" "}
 							Cette page est conçue pour déboguer
 							l&apos;application Electron. Certaines
 							fonctionnalités ne sont pas disponibles dans le

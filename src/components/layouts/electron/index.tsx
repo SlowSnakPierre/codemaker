@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import TitleBar from "./title-bar";
+import TitleBar from "./topbar";
 import type { FileData, FileTab, FileChangeEvent } from "@/lib/types";
 import EditorPanel from "@/components/editor/editor-panel";
 import {
@@ -10,8 +10,8 @@ import {
 	ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { toast } from "sonner";
-import Sidebar from "./sidebar";
-import StatusBar from "./status-bar";
+import Sidebar from "../sidebar";
+import StatusBar from "../status-bar";
 import {
 	Dialog,
 	DialogContent,
@@ -626,7 +626,7 @@ const ElectronLayout = () => {
 						onRedo={handleRedo}
 					/>
 				</ResizablePanel>
-			</ResizablePanelGroup>{" "}
+			</ResizablePanelGroup>
 			<StatusBar
 				activeFile={
 					tabs.find((tab) => tab.id === activeTab)?.name || null
@@ -642,8 +642,7 @@ const ElectronLayout = () => {
 				useTabs={false}
 				onLanguageChange={handleLanguageChange}
 				currentDirectory={currentDirectory}
-			/>{" "}
-			{/* Boîte de dialogue de confirmation pour la fermeture d'onglet */}
+			/>
 			<Dialog
 				open={isCloseDialogOpen}
 				onOpenChange={setIsCloseDialogOpen}

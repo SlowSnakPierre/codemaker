@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { FileData, FileChangeEvent, FileTab } from "@/lib/types";
 import { toast } from "sonner";
-import SidebarHeader from "./sidebar/sidebar-header";
-import Explorer from "./sidebar/explorer";
-import SidebarDialogs from "./sidebar/sidebar-dialogs";
+import SidebarHeader from "./explorer/sidebar-header";
+import Explorer from "./explorer/explorer";
+import SidebarDialogs from "./explorer/sidebar-dialogs";
 
 interface SidebarProps {
 	activeTab: FileTab | undefined;
@@ -501,7 +501,6 @@ export default function Sidebar({
 
 	return (
 		<div className="flex flex-col h-full select-none group/sidebar">
-			{" "}
 			<SidebarHeader
 				isLoading={isLoading}
 				currentDirectory={currentDirectory}

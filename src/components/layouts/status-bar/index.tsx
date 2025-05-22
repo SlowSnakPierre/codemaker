@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import WatcherStatus from "./status/watcher-status";
+import WatcherStatus from "../electron/status/watcher-status";
 
 type Props = {
 	activeFile: string | null;
@@ -155,7 +155,7 @@ const StatusBar = ({
 				</span>
 				<span className="h-3 w-[1px] bg-border"></span>
 				<span>{indentationDisplay}</span>
-				<span className="h-3 w-[1px] bg-border"></span>{" "}
+				<span className="h-3 w-[1px] bg-border"></span>
 				<span>UTF-8</span>
 				<span className="h-3 w-[1px] bg-border"></span>
 				<span>
@@ -172,10 +172,10 @@ const StatusBar = ({
 			</div>
 
 			<div className=" flex items-center space-x-4">
-				<span>{activeFile ? activeFile : "No file open"}</span>{" "}
+				<span>{activeFile ? activeFile : "No file open"}</span>
 				{activeFile && (
 					<>
-						<span className="h-3 w-[1px] bg-border"></span>{" "}
+						<span className="h-3 w-[1px] bg-border"></span>
 						<DropdownMenu
 							open={isLanguageMenuOpen}
 							onOpenChange={setIsLanguageMenuOpen}
@@ -188,7 +188,7 @@ const StatusBar = ({
 									<span>{formattedLanguage}</span>
 									<ChevronDown size={12} className="ml-1" />
 								</button>
-							</DropdownMenuTrigger>{" "}
+							</DropdownMenuTrigger>
 							<DropdownMenuContent
 								align="end"
 								className="w-64 p-2"
