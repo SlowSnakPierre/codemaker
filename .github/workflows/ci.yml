@@ -3,7 +3,7 @@ name: CI
 on:
     push:
         branches: [main]
-    pull_request:
+    pull_request_target:
         branches: [main]
     workflow_dispatch:
 
@@ -12,6 +12,8 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+              with:
+                  token: ${{ secrets.RELEASE_TOKEN }}
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
@@ -36,9 +38,13 @@ jobs:
     security:
         runs-on: ubuntu-latest
         permissions:
+            actions: read
+            contents: read
             security-events: write
         steps:
             - uses: actions/checkout@v4
+              with:
+                  token: ${{ secrets.RELEASE_TOKEN }}
 
             - name: Initialize CodeQL
               uses: github/codeql-action/init@v3
