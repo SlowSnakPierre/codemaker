@@ -37,6 +37,12 @@ export interface RefreshDirectoryResult {
 	files?: ReadDirectory[];
 }
 
+export interface RecentProject {
+	name: string;
+	path: string;
+	lastOpened: string;
+}
+
 export interface ElectronAPI {
 	openDirectory: () => Promise<string | null>;
 	readDirectory: (dirPath: string) => Promise<ReadDirectory[] | null>;

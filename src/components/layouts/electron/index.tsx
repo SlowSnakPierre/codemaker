@@ -521,6 +521,14 @@ const ElectronLayout = () => {
 					}
 				}
 			});
+
+			window.electron
+				.getSettings("recentProjects")
+				.then((projects: RecentProject[]) => {
+					if (projects?.length) {
+						setRecentProjects(projects);
+					}
+				});
 		}
 	}, [isElectron]);
 
@@ -776,6 +784,7 @@ const ElectronLayout = () => {
 						onSpecificDirectoryOpen={handleSpecificDirectoryOpen}
 						onUndo={handleUndo}
 						onRedo={handleRedo}
+						recentProjects={recentProjects}
 					/>
 				</ResizablePanel>
 			</ResizablePanelGroup>
