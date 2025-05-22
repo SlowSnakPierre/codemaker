@@ -19,6 +19,9 @@ on:
 jobs:
     create-release:
         runs-on: ubuntu-latest
+        outputs: # Fixed: was "output" instead of "outputs"
+            tag: ${{ steps.tag.outputs.tag }}
+            version: ${{ steps.tag.outputs.version }} # Added version output
         steps:
             - uses: actions/checkout@v4
               with:
@@ -26,9 +29,10 @@ jobs:
                   token: ${{ secrets.RELEASE_TOKEN }}
 
             - name: Setup Node.js
-              uses: oven-sh/setup-bun@v2
+              uses: actions/setup-node@v4 # Fixed: was using bun setup instead of node
               with:
-                  bun-version: latest
+                  node-version: "18"
+                  cache: "npm"
 
             - name: Configure Git
               run: |
@@ -54,14 +58,27 @@ jobs:
                   echo "tag=$TAG" >> $GITHUB_OUTPUT
 
                   # Récupérer le tag précédent pour les notes de release
-                  PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~1")
+                  PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+                  if [ -z "$PREV_TAG" ]; then
+                    # Si aucun tag précédent, utiliser le premier commit
+                    PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+                  fi
                   echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
 
             - name: Update package.json
               run: |
-                  npm version ${{ steps.tag.outputs.version }} --no-git-tag-version
-                  git add package.json package-lock.json
-                  git commit -m "chore(release): version ${{ steps.tag.outputs.version }}"
+                  # Vérifier si package.json existe
+                  if [ -f "package.json" ]; then
+                    npm version ${{ steps.tag.outputs.version }} --no-git-tag-version
+                    git add package.json
+                    # Ajouter package-lock.json seulement s'il existe
+                    if [ -f "package-lock.json" ]; then
+                      git add package-lock.json
+                    fi
+                    git commit -m "chore(release): version ${{ steps.tag.outputs.version }}"
+                  else
+                    echo "No package.json found, skipping version update"
+                  fi
 
             - name: Generate Release Notes
               id: changelog
@@ -70,39 +87,62 @@ jobs:
                   {
                     echo "## Changements dans la version ${{ steps.tag.outputs.version }}"
                     echo ""
+                    
                     # Nouvelles fonctionnalités
                     echo "### ✨ Nouvelles fonctionnalités"
-                    git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %s" --grep="^feat"
+                    FEAT_COMMITS=$(git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %s" --grep="^feat" || echo "")
+                    if [ -n "$FEAT_COMMITS" ]; then
+                      echo "$FEAT_COMMITS"
+                    else
+                      echo "Aucune nouvelle fonctionnalité"
+                    fi
                     
                     # Corrections
-                    echo -e "\n### 🐛 Corrections"
-                    git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %s" --grep="^fix"
+                    echo ""
+                    echo "### 🐛 Corrections"
+                    FIX_COMMITS=$(git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %s" --grep="^fix" || echo "")
+                    if [ -n "$FIX_COMMITS" ]; then
+                      echo "$FIX_COMMITS"
+                    else
+                      echo "Aucune correction"
+                    fi
                     
                     # Performance
-                    echo -e "\n### ⚡ Performance"
-                    git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %s" --grep="^perf"
+                    echo ""
+                    echo "### ⚡ Performance"
+                    PERF_COMMITS=$(git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %s" --grep="^perf" || echo "")
+                    if [ -n "$PERF_COMMITS" ]; then
+                      echo "$PERF_COMMITS"
+                    else
+                      echo "Aucune amélioration de performance"
+                    fi
                     
                     # Si c'est une version majeure, inclure les changements importants
                     if [[ "${{ steps.tag.outputs.version }}" =~ ^[0-9]+\.0\.0 ]]; then
-                      echo -e "\n### ⚠️ Changements majeurs"
-                      git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %b" | grep "BREAKING CHANGE:" || echo "Aucun changement majeur"
+                      echo ""
+                      echo "### ⚠️ Changements majeurs"
+                      BREAKING_CHANGES=$(git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %b" | grep "BREAKING CHANGE:" || echo "")
+                      if [ -n "$BREAKING_CHANGES" ]; then
+                        echo "$BREAKING_CHANGES"
+                      else
+                        echo "Aucun changement majeur"
+                      fi
                     fi
                   } > RELEASE_NOTES.md
 
-                  # Sauvegarder pour GitHub Actions
-                  NOTES=$(cat RELEASE_NOTES.md)
-                  echo "notes<<EOF" >> $GITHUB_OUTPUT
-                  echo "$NOTES" >> $GITHUB_OUTPUT
-                  echo "EOF" >> $GITHUB_OUTPUT
+                  # Sauvegarder pour GitHub Actions avec délimiteur EOF sécurisé
+                  echo "notes<<RELEASE_NOTES_EOF" >> $GITHUB_OUTPUT
+                  cat RELEASE_NOTES.md >> $GITHUB_OUTPUT
+                  echo "RELEASE_NOTES_EOF" >> $GITHUB_OUTPUT
 
             - name: Create Git Tag
               run: |
                   git tag -a "${{ steps.tag.outputs.tag }}" -m "Release ${{ steps.tag.outputs.version }}"
-                  git push --tags
-                  git push
+                  git push origin "${{ steps.tag.outputs.tag }}"
+                  git push origin HEAD
 
             - name: Create GitHub Release
-              uses: softprops/action-gh-release@v1
+              uses: softprops/action-gh-release@v2 # Updated to v2
               with:
                   tag_name: ${{ steps.tag.outputs.tag }}
                   name: "Release ${{ steps.tag.outputs.version }}"
