@@ -1,0 +1,88 @@
+﻿name: Maintenance Automatique
+
+on:
+    schedule:
+        - cron: "0 2 * * 1" # Tous les lundis à 2h du matin
+    workflow_dispatch:
+
+jobs:
+    dependencies:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v1
+              with:
+                  bun-version: latest
+
+            - name: Check for Updates
+              id: ncu
+              run: |
+                  bun install -g npm-check-updates
+                  ncu --packageFile package.json --target minor > updates.txt
+
+            - name: Update Dependencies
+              run: |
+                  if [ -s updates.txt ]; then
+                    ncu --packageFile package.json --target minor -u
+                    bun install
+                    
+                    # Vérifier si tout fonctionne après mise à jour
+                    bun run build
+                    
+                    # Commit les changements si le build réussit
+                    git config user.name "github-actions[bot]"
+                    git config user.email "github-actions[bot]@users.noreply.github.com"
+                    git add package.json package-lock.json
+                    git commit -m "chore(deps): mise à jour des dépendances"
+                    git push
+                  else
+                    echo "Aucune mise à jour nécessaire"
+                  fi
+
+    stale:
+        runs-on: ubuntu-latest
+        permissions:
+            issues: write
+            pull-requests: write
+        steps:
+            - uses: actions/stale@v9
+              with:
+                  # Configuration pour les PR
+                  days-before-pr-stale: 30
+                  days-before-pr-close: 14
+                  stale-pr-message: "Cette PR n''a pas eu d''activité depuis 30 jours. Elle sera fermée dans 14 jours si aucune activité n''est détectée."
+                  close-pr-message: "Cette PR a été fermée automatiquement pour inactivité."
+                  stale-pr-label: "stale"
+                  exempt-pr-labels: "no-stale,security,dependencies"
+
+                  # Configuration pour les issues
+                  days-before-issue-stale: 60
+                  days-before-issue-close: 30
+                  stale-issue-message: "Cette issue n''a pas eu d''activité depuis 60 jours. Elle sera fermée dans 30 jours si aucune activité n''est détectée."
+                  close-issue-message: "Cette issue a été fermée automatiquement pour inactivité."
+                  stale-issue-label: "stale"
+                  exempt-issue-labels: "no-stale,bug,enhancement,security"
+
+    cleanup:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Delete old branches
+              run: |
+                  # Supprimer les branches mergées et non actives depuis 3 mois
+                  git fetch --prune
+                  OLD_BRANCHES=$(git branch -r --merged origin/main | grep -v "main\|master" | sed "s/origin\///" | xargs -I{} sh -c "if [ \$(git log -1 --since=\"3 months ago\" -s origin/{}) = \"\" ]; then echo {}; fi")
+
+                  if [ -n "$OLD_BRANCHES" ]; then
+                    echo "Branches à supprimer:"
+                    echo "$OLD_BRANCHES"
+                    echo "Branches supprimées. Utilisez git push origin --delete branch_name pour les supprimer du dépôt distant."
+                  fi

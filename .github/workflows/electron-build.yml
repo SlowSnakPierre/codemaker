@@ -1,0 +1,152 @@
+﻿name: Desktop App Build
+
+on:
+    push:
+        tags: ["v*"]
+    workflow_dispatch:
+        inputs:
+            debug:
+                description: "Build debug version"
+                required: false
+                type: boolean
+                default: false
+    workflow_call:
+        inputs:
+            tag:
+                required: false
+                type: string
+                description: "Tag de version Ã  construire"
+            debug:
+                required: false
+                type: boolean
+                default: false
+                description: "Build debug version"
+    release:
+        types: [created]
+
+jobs:
+    build:
+        strategy:
+            matrix:
+                os: [windows-latest, macos-latest, ubuntu-latest]
+
+        runs-on: ${{ matrix.os }}
+
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Verify version match
+              if: startsWith(github.ref, 'refs/tags/v')
+              run: |
+                  $TAG_VERSION = $env:GITHUB_REF -replace 'refs/tags/v', ''
+                  $PKG_VERSION = (Get-Content package.json | ConvertFrom-Json).version
+                  if ($TAG_VERSION -ne $PKG_VERSION) {
+                    Write-Error "Version mismatch: Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)"
+                    exit 1
+                  }
+
+            - name: Generate Changelog
+              if: matrix.os == 'ubuntu-latest' && startsWith(github.ref, 'refs/tags/v')
+              id: changelog
+              run: |
+                  $PREV_TAG = $(git describe --tags --abbrev=0 HEAD^ 2>$null) ?? "HEAD"
+                  $CHANGELOG = $(git log --pretty=format:'- %s%n%b' $PREV_TAG..HEAD)
+                  $CHANGELOG = $CHANGELOG -replace '"', '\"' -replace '\n', '\n'
+                  "changelog<<EOF" >> $env:GITHUB_OUTPUT
+                  $CHANGELOG >> $env:GITHUB_OUTPUT
+                  "EOF" >> $env:GITHUB_OUTPUT
+
+            - name: Install Linux Dependencies
+              if: matrix.os == 'ubuntu-latest'
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+
+            - name: Cache electron-builder
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cache/electron
+                      ~/.cache/electron-builder
+                  key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: |
+                      ${{ runner.os }}-electron-builder-
+
+            - name: Install dependencies
+              run: bun install
+
+            - name: Build Next.js and Electron App
+              run: bun run build
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  DEBUG_BUILD: ${{ inputs.debug || 'false' }}
+                  CSC_IDENTITY_AUTO_DISCOVERY: false
+                  ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/electron-builder
+                  # Optimisations pour electron-builder
+                  ELECTRON_BUILDER_COMPRESSION: maximum
+                  ELECTRON_BUILDER_COMPRESSION_LEVEL: 9
+                  ELECTRON_ENABLE_LOGGING: 1
+
+            # Compression des artefacts avant l'upload
+            - name: Compress Windows artifacts
+              if: matrix.os == 'windows-latest'
+              run: |
+                  Compress-Archive -Path "dist/*.exe", "dist/latest.yml" -DestinationPath "dist/windows-artifacts.zip"
+
+            - name: Compress macOS artifacts
+              if: matrix.os == 'macos-latest'
+              run: |
+                  Compress-Archive -Path "dist/*.dmg", "dist/latest-mac.yml" -DestinationPath "dist/macos-artifacts.zip"
+
+            - name: Compress Linux artifacts
+              if: matrix.os == 'ubuntu-latest'
+              run: |
+                  Compress-Archive -Path "dist/*.AppImage", "dist/latest-linux.yml" -DestinationPath "dist/linux-artifacts.zip"
+
+            - name: Upload Windows artifacts
+              if: matrix.os == 'windows-latest'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: windows-artifacts
+                  path: dist/windows-artifacts.zip
+                  compression-level: 9
+
+            - name: Upload macOS artifacts
+              if: matrix.os == 'macos-latest'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: macos-artifacts
+                  path: dist/macos-artifacts.zip
+                  compression-level: 9
+
+            - name: Upload Linux artifacts
+              if: matrix.os == 'ubuntu-latest'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: linux-artifacts
+                  path: dist/linux-artifacts.zip
+                  compression-level: 9
+
+            - name: Create Release
+              if: matrix.os == 'ubuntu-latest' && startsWith(github.ref, 'refs/tags/v')
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: |
+                      dist/*.exe
+                      dist/*.dmg
+                      dist/*.AppImage
+                      dist/latest*.yml
+                  draft: false
+                  prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') }}
+                  body: ${{ steps.changelog.outputs.changelog }}
+                  generate_release_notes: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

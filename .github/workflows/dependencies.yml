@@ -1,0 +1,53 @@
+name: Dependencies Management
+
+on:
+    schedule:
+        - cron: "0 9 * * 1" # Tous les lundis à 9h
+    workflow_dispatch:
+
+jobs:
+    update-deps:
+        runs-on: windows-latest # Windows car c'est la plateforme principale
+        permissions:
+            contents: write
+            pull-requests: write
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+
+            - name: Check for Updates
+              id: ncu
+              run: |
+                  npm install -g npm-check-updates
+                  # Vérifie les mises à jour en excluant certaines dépendances majeures
+                  ncu --packageFile package.json --target minor > updates.txt
+
+            - name: Create Update PR
+              uses: peter-evans/create-pull-request@v6
+              with:
+                  commit-message: "chore(deps): mise à jour des dépendances"
+                  title: "⬆️ Mise à jour des dépendances"
+                  body: |
+                      Mise à jour automatique des dépendances npm.
+
+                      <details>
+                      <summary>Liste des mises à jour</summary>
+
+                      ```
+                      $(Get-Content updates.txt)
+                      ```
+                      </details>
+
+                      - [ ] Vérifier que l'application se lance correctement
+                      - [ ] Vérifier les fonctionnalités principales
+                      - [ ] Vérifier le build Electron
+                  branch: deps/auto-updates
+                  delete-branch: true
+                  labels: dependencies
+                  assignees: ${{ github.repository_owner }}

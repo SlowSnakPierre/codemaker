@@ -1,0 +1,119 @@
+name: Release Management
+
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: "Version à publier (ex: 1.0.0)"
+                required: true
+                type: string
+            type:
+                description: "Type de release"
+                required: true
+                type: choice
+                options:
+                    - stable
+                    - beta
+                    - alpha
+
+jobs:
+    create-release:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Setup Node.js
+              uses: oven-sh/setup-bun@v1
+              with:
+                  bun-version: latest
+
+            - name: Configure Git
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            - name: Set version and create tag
+              id: tag
+              run: |
+                  VERSION="${{ github.event.inputs.version }}"
+                  RELEASE_TYPE="${{ github.event.inputs.type }}"
+
+                  # Ajouter suffixe selon type
+                  if [ "$RELEASE_TYPE" = "beta" ]; then
+                    VERSION="${VERSION}-beta"
+                  elif [ "$RELEASE_TYPE" = "alpha" ]; then
+                    VERSION="${VERSION}-alpha"
+                  fi
+
+                  TAG="v$VERSION"
+
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
+                  echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+                  # Récupérer le tag précédent pour les notes de release
+                  PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~1")
+                  echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+
+            - name: Update package.json
+              run: |
+                  bun pm add --package.json ${{ steps.tag.outputs.version }} --no-git-tag-version
+                  git add package.json package-lock.json
+                  git commit -m "chore(release): version ${{ steps.tag.outputs.version }}"
+
+            - name: Generate Release Notes
+              id: changelog
+              run: |
+                  # Générer les notes de version
+                  {
+                    echo "## Changements dans la version ${{ steps.tag.outputs.version }}"
+                    echo ""
+                    # Nouvelles fonctionnalités
+                    echo "### ✨ Nouvelles fonctionnalités"
+                    git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %s" --grep="^feat"
+                    
+                    # Corrections
+                    echo -e "\n### 🐛 Corrections"
+                    git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %s" --grep="^fix"
+                    
+                    # Performance
+                    echo -e "\n### ⚡ Performance"
+                    git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %s" --grep="^perf"
+                    
+                    # Si c'est une version majeure, inclure les changements importants
+                    if [[ "${{ steps.tag.outputs.version }}" =~ ^[0-9]+\.0\.0 ]]; then
+                      echo -e "\n### ⚠️ Changements majeurs"
+                      git log ${{ steps.tag.outputs.prev_tag }}..HEAD --pretty=format:"- %b" | grep "BREAKING CHANGE:" || echo "Aucun changement majeur"
+                    fi
+                  } > RELEASE_NOTES.md
+
+                  # Sauvegarder pour GitHub Actions
+                  NOTES=$(cat RELEASE_NOTES.md)
+                  echo "notes<<EOF" >> $GITHUB_OUTPUT
+                  echo "$NOTES" >> $GITHUB_OUTPUT
+                  echo "EOF" >> $GITHUB_OUTPUT
+
+            - name: Create Git Tag
+              run: |
+                  git tag -a "${{ steps.tag.outputs.tag }}" -m "Release ${{ steps.tag.outputs.version }}"
+                  git push --tags
+                  git push
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v1
+              with:
+                  tag_name: ${{ steps.tag.outputs.tag }}
+                  name: "Release ${{ steps.tag.outputs.version }}"
+                  body: ${{ steps.changelog.outputs.notes }}
+                  draft: false
+                  prerelease: ${{ github.event.inputs.type != 'stable' }}
+                  token: ${{ secrets.GITHUB_TOKEN }}
+
+    build:
+        needs: create-release
+        uses: ./.github/workflows/electron-build.yml
+        with:
+            tag: ${{ needs.create-release.outputs.tag }}
+        secrets: inherit
