@@ -59,7 +59,7 @@ jobs:
 
             - name: Update package.json
               run: |
-                  bun add --package.json ${{ steps.tag.outputs.version }} --no-git-tag-version
+                  npm version ${{ steps.tag.outputs.version }} --no-git-tag-version
                   git add package.json package-lock.json
                   git commit -m "chore(release): version ${{ steps.tag.outputs.version }}"
 
