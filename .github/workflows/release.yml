@@ -59,7 +59,7 @@ jobs:
 
             - name: Update package.json
               run: |
-                  bun pm add --package.json ${{ steps.tag.outputs.version }} --no-git-tag-version
+                  bun version ${{ steps.tag.outputs.version }} --no-git-tag-version
                   git add package.json package-lock.json
                   git commit -m "chore(release): version ${{ steps.tag.outputs.version }}"
 
