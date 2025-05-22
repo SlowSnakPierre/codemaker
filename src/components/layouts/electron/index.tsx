@@ -784,7 +784,6 @@ const ElectronLayout = () => {
 						onSpecificDirectoryOpen={handleSpecificDirectoryOpen}
 						onUndo={handleUndo}
 						onRedo={handleRedo}
-						recentProjects={recentProjects}
 					/>
 				</ResizablePanel>
 			</ResizablePanelGroup>
