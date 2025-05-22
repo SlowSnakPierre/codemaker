@@ -26,7 +26,6 @@ import {
 	stopWatcherHealthCheck,
 } from "@/lib/watcher-utils";
 import PageSelector from "../sidebar/page-selector";
-import { Separator } from "@/components/ui/separator";
 
 const ElectronLayout = () => {
 	const [isClient, setIsClient] = useState(false);
@@ -82,6 +81,7 @@ const ElectronLayout = () => {
 			});
 		}
 	}, [isElectron]);
+
 	useEffect(() => {
 		if (isElectron && tabs.length > 0) {
 			window.electron.setSettings({ key: "tabs", value: tabs });
@@ -99,6 +99,7 @@ const ElectronLayout = () => {
 			stopWatcherHealthCheck();
 		};
 	}, [isElectron, currentDirectory]);
+
 	useEffect(() => {
 		if (!isElectron || !currentDirectory) return;
 
@@ -294,6 +295,27 @@ const ElectronLayout = () => {
 			console.error(error);
 		}
 	};
+
+	const handleSpecificDirectoryOpen = async (dir: string) => {
+		if (!isElectron) return;
+
+		try {
+			setCurrentDirectory(dir);
+
+			window.electron
+				.restartWatcher(dir)
+				.then(() => console.log("Watcher redémarré pour:", dir))
+				.catch((err) =>
+					console.error("Échec du redémarrage du watcher:", err)
+				);
+
+			toast.success(`Opened directory: ${dir.split(/[/\\]/).pop()}`);
+		} catch (error) {
+			toast.error("Failed to open directory");
+			console.error(error);
+		}
+	};
+
 	const handleDirectoryClose = () => {
 		setCurrentDirectory(null);
 		if (isElectron) {
@@ -628,6 +650,9 @@ const ElectronLayout = () => {
 						onContentChange={handleContentChange}
 						onSaveFile={handleFileSave}
 						onCursorPositionChange={handleCursorPositionChange}
+						onOpenFile={handleFileOpen}
+						onDirectoryOpen={handleDirectoryOpen}
+						onSpecificDirectoryOpen={handleSpecificDirectoryOpen}
 						onUndo={handleUndo}
 						onRedo={handleRedo}
 					/>

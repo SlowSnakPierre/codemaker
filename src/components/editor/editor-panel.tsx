@@ -7,7 +7,7 @@ import CodeEditor from "@/components/editor/code-editor";
 import { toast } from "sonner";
 import { XIcon, CircleIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
+import WelcomePage from "@/components/editor/welcome-page";
 
 interface EditorPanelProps {
 	tabs: FileTab[];
@@ -17,6 +17,9 @@ interface EditorPanelProps {
 	onContentChange: (tabId: string, content: string) => void;
 	onSaveFile: (tabId: string) => void;
 	onCursorPositionChange: (line: number, column: number) => void;
+	onOpenFile: () => void;
+	onDirectoryOpen: () => void;
+	onSpecificDirectoryOpen: (dir: string) => void;
 	onUndo?: () => void;
 	onRedo?: () => void;
 }
@@ -29,11 +32,13 @@ export default function EditorPanel({
 	onContentChange,
 	onSaveFile,
 	onCursorPositionChange,
+	onOpenFile,
+	onDirectoryOpen,
+	onSpecificDirectoryOpen,
 	onUndo,
 	onRedo,
 }: EditorPanelProps) {
 	const tabsRef = useRef<HTMLDivElement>(null);
-	const isElectron = typeof window !== "undefined" && window.electron;
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -118,7 +123,6 @@ export default function EditorPanel({
 							</div>
 						</ScrollArea>
 					</div>
-
 					<div className="flex-grow relative overflow-hidden">
 						{tabs.map((tab) => (
 							<div
@@ -143,30 +147,38 @@ export default function EditorPanel({
 								/>
 							</div>
 						))}
-					</div>
+					</div>{" "}
 				</>
 			) : (
-				<div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-					<div className="flex flex-col items-center justify-between max-w-md text-center">
-						<Image
-							src="/logo.svg"
-							alt="CodeMaker"
-							width={200}
-							height={200}
-							className="flex-1"
-						/>
-						<p className="mt-6 text-sm flex justify-center gap-3">
-							<kbd className="px-2 py-1 bg-muted rounded border border-border">
-								Ctrl + O
-							</kbd>
-							<span>to open files</span>
-							<kbd className="px-2 py-1 bg-muted rounded border border-border">
-								Ctrl + S
-							</kbd>
-							<span>to save</span>
-						</p>
-					</div>
-				</div>
+				<WelcomePage
+					onOpenFile={onOpenFile}
+					onDirectoryOpen={onDirectoryOpen}
+					recentProjects={[
+						// Ces données seront remplacées par les vraies données de projets récents
+						{
+							name: "Mon Projet",
+							path: "C:/Users/Utilisateur/projets/mon-projet",
+							lastOpened: new Date(
+								Date.now() - 24 * 60 * 60 * 1000
+							),
+						},
+						{
+							name: "Application Web",
+							path: "C:/Users/Utilisateur/projets/app-web",
+							lastOpened: new Date(
+								Date.now() - 3 * 24 * 60 * 60 * 1000
+							),
+						},
+						{
+							name: "API Backend",
+							path: "C:/Users/Utilisateur/projets/api-backend",
+							lastOpened: new Date(
+								Date.now() - 7 * 24 * 60 * 60 * 1000
+							),
+						},
+					]}
+					onSpecificDirectoryOpen={onSpecificDirectoryOpen}
+				/>
 			)}
 		</div>
 	);
