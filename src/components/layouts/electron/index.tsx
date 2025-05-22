@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import TitleBar from "./topbar";
-import type { FileData, FileTab, FileChangeEvent } from "@/lib/types";
+import type { FileData, FileTab, FileChangeEvent, RecentProject } from "@/lib/types";
 import EditorPanel from "@/components/editor/editor-panel";
 import {
 	ResizableHandle,
@@ -41,8 +41,10 @@ const ElectronLayout = () => {
 	});
 	const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
 	const [tabToClose, setTabToClose] = useState<string | null>(null);
+	const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 
 	const isElectron = typeof window !== "undefined" && window.electron;
+
 	useEffect(() => {
 		setIsClient(false);
 
@@ -77,6 +79,12 @@ const ElectronLayout = () => {
 							savedTabs[0].id;
 						setActiveTab(lastActiveTab);
 					}
+				}
+			});
+
+			window.electron.getSettings("recentProjects").then((projects: RecentProject[]) => {
+				if (projects?.length) {
+					setRecentProjects(projects);
 				}
 			});
 		}
@@ -241,6 +249,27 @@ const ElectronLayout = () => {
 		setSidebarCollapsed((prev) => !prev);
 	};
 
+	const updateRecentProjects = (directory: string) => {
+		const name = directory.split(/[/\\]/).pop() || directory;
+		const newProject = {
+			name,
+			path: directory,
+			lastOpened: new Date().toISOString(),
+		};
+
+		setRecentProjects((prev) => {
+			const filtered = prev.filter((p) => p.path !== directory);
+			const updated = [newProject, ...filtered].slice(0, 10);
+			if (isElectron) {
+				window.electron.setSettings({
+					key: "recentProjects",
+					value: updated,
+				});
+			}
+			return updated;
+		});
+	};
+
 	const handleFileOpen = async () => {
 		if (!isElectron) return;
 
@@ -286,6 +315,7 @@ const ElectronLayout = () => {
 			const dirPath = await window.electron.openDirectory();
 			if (dirPath) {
 				setCurrentDirectory(dirPath);
+				updateRecentProjects(dirPath);
 				toast.success(
 					`Opened directory: ${dirPath.split(/[/\\]/).pop()}`
 				);
@@ -301,6 +331,7 @@ const ElectronLayout = () => {
 
 		try {
 			setCurrentDirectory(dir);
+			updateRecentProjects(dir);
 
 			window.electron
 				.restartWatcher(dir)
@@ -325,6 +356,7 @@ const ElectronLayout = () => {
 			});
 		}
 	};
+
 	const handleFileSave = async (tabId: string) => {
 		if (!isElectron) return;
 
@@ -412,6 +444,7 @@ const ElectronLayout = () => {
 			}))
 		);
 	};
+
 	const handleTabClose = async (tabId: string) => {
 		const tabToClose = tabs.find((tab) => tab.id === tabId);
 
@@ -444,6 +477,7 @@ const ElectronLayout = () => {
 			return filtered;
 		});
 	};
+
 	const handleContentChange = async (tabId: string, newContent: string) => {
 		setTabs((prevTabs) =>
 			prevTabs.map((tab) => {
@@ -500,9 +534,11 @@ const ElectronLayout = () => {
 				console.error(error);
 			});
 	};
+
 	const handleCursorPositionChange = (line: number, column: number) => {
 		setCursorPosition({ line, column });
 	};
+
 	const handleLanguageChange = (language: string) => {
 		if (!activeTab) return;
 
@@ -517,7 +553,6 @@ const ElectronLayout = () => {
 					return {
 						...tab,
 						language: finalLanguage,
-
 						languageOverride: language === "auto" ? null : language,
 					};
 				}
@@ -655,6 +690,7 @@ const ElectronLayout = () => {
 						onSpecificDirectoryOpen={handleSpecificDirectoryOpen}
 						onUndo={handleUndo}
 						onRedo={handleRedo}
+						recentProjects={recentProjects}
 					/>
 				</ResizablePanel>
 			</ResizablePanelGroup>

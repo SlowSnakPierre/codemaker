@@ -14,11 +14,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import type { RecentProject } from "@/lib/types";
 
 interface WelcomePageProps {
 	onOpenFile: () => void;
 	onDirectoryOpen: () => void;
-	recentProjects?: Array<{ name: string; path: string; lastOpened: Date }>;
+	recentProjects?: RecentProject[];
 	onSpecificDirectoryOpen: (dir: string) => void;
 }
 
@@ -162,7 +163,9 @@ const WelcomePage: React.FC<WelcomePageProps> = ({
 												</p>
 											</div>
 											<p className="text-xs text-muted-foreground ml-4 whitespace-nowrap">
-												{formatDate(project.lastOpened)}
+												{formatDate(
+													new Date(project.lastOpened)
+												)}
 											</p>
 										</button>
 									))}
