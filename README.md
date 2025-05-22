@@ -1,6 +1,17 @@
 # Codemaker
 
-Un### Démarrage rapide
+Un IDE moderne construit avec Electron et Next.js, inspiré par VS Code et Bolt.
+
+## Fonctionnalités
+
+- Interface utilisateur moderne basée sur Next.js et TailwindCSS
+- Éditeur de code Monaco (utilisé dans VS Code)
+- Support multi-fichiers et multi-onglets
+- Explorateur de fichiers
+- Thèmes clairs et sombres
+- Application bureau avec Electron pour Windows, macOS et Linux
+
+## Démarrage rapide
 
 ```bash
 # Installer les dépendances
@@ -14,39 +25,9 @@ L'application démarre automatiquement une fenêtre Electron avec l'interface Ne
 
 ### Build
 
-````bash
+```bash
 # Créer un exécutable pour votre système
 bun run build
-```IDE) moderne construit avec Electron et Next.js, inspiré par VS Code et Bolt.
-
-## Fonctionnalités
-
-- Interface utilisateur moderne basée sur Next.js et TailwindCSS
-- Éditeur de code Monaco (utilisé dans VS Code)
-- Support multi-fichiers et multi-onglets
-- Explorateur de fichiers
-- Thèmes clairs et sombres
-- Application bureau avec Electron pour Windows, macOS et Linux
-
-## Démarrage rapide
-
-### Développement
-
-```bash
-# Installer les dépendances
-npm install
-
-# Lancer l'application en mode développement
-npm run dev
-````
-
-L'application démarre automatiquement une fenêtre Electron avec l'interface Next.js.
-
-### Build
-
-```bash
-# Créer un exécutable pour votre système
-npm run build
 ```
 
 Les fichiers de sortie se trouvent dans le dossier `dist`.
@@ -101,3 +82,8 @@ bun run release patch beta
     - `/components` - Composants React
     - `/lib` - Utilitaires et fonctions
     - `/hooks` - Hooks React personnalisés
+
+## Documentation supplémentaire
+
+- [Guide de contribution](./CONTRIBUTING.md)
+- [Guide de release](./RELEASING.md)
