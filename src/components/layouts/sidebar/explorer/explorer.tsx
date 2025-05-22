@@ -5,6 +5,7 @@ import FileItem from "./file-item";
 import { Button } from "@/components/ui/button";
 import type { FileData, FileTab } from "@/lib/types";
 import { toast } from "sonner";
+import { useDirectoryTree } from "@/hooks/useDirectoryTree";
 
 const Explorer = ({
 	currentDirectory,

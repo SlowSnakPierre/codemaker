@@ -7,6 +7,8 @@ import SidebarHeader from "./explorer/sidebar-header";
 import Explorer from "./explorer/explorer";
 import SidebarDialogs from "./explorer/sidebar-dialogs";
 import PageSelector from "./page-selector";
+import { useDirectoryTree } from "@/hooks/useDirectoryTree";
+import { useFileSystem } from "@/hooks/useFileSystem";
 
 interface SidebarProps {
 	activeTab: FileTab | undefined;
@@ -23,10 +25,6 @@ export default function Sidebar({
 	onDirectoryOpen,
 	onDirectoryClose = () => {},
 }: SidebarProps) {
-	const [files, setFiles] = useState<FileData[]>([]);
-	const [expandedFolders, setExpandedFolders] = useState<
-		Record<string, boolean>
-	>({});
 	const [isCreatingFile, setIsCreatingFile] = useState<boolean>(false);
 	const [isCreatingFolder, setIsCreatingFolder] = useState<boolean>(false);
 	const [newFileName, setNewFileName] = useState<string>("");
@@ -41,194 +39,15 @@ export default function Sidebar({
 
 	const isElectron = typeof window !== "undefined" && window.electron;
 
-	const updateNestedFilesWithChildren = useCallback(
-		(
-			files: FileData[],
-			targetPath: string,
-			newChildren: FileData[],
-		): FileData[] => {
-			return files.map((file) => {
-				if (file.path === targetPath) {
-					return { ...file, children: newChildren };
-				} else if (file.children) {
-					return {
-						...file,
-						children: updateNestedFilesWithChildren(
-							file.children,
-							targetPath,
-							newChildren,
-						),
-					};
-				}
-				return file;
-			});
-		},
-		[],
-	);
-
-	const updateFilesTree = useCallback(
-		(dirPath: string, newContents: FileData[]) => {
-			const normalizedPath = dirPath.replace(/\\/g, "/");
-
-			if (normalizedPath === currentDirectory?.replace(/\\/g, "/")) {
-				setFiles(newContents);
-				console.log(
-					`Mise à jour du contenu racine avec ${newContents.length} éléments`,
-				);
-				return;
-			}
-
-			setFiles((prevFiles) => {
-				const updatedFiles = updateNestedFilesWithChildren(
-					prevFiles,
-					normalizedPath,
-					newContents,
-				);
-				console.log(
-					`Mise à jour de ${normalizedPath} avec ${newContents.length} éléments`,
-				);
-				return updatedFiles;
-			});
-		},
-		[currentDirectory, updateNestedFilesWithChildren],
-	);
-
-	const refreshFolder = useCallback(
-		async (path: string, showNotification = true) => {
-			if (!isElectron) return;
-
-			if (showNotification) {
-				setIsLoading(true);
-			}
-
-			try {
-				const result = await window.electron.refreshDirectory(path);
-				if (result.success) {
-					updateFilesTree(path, result.files || []);
-
-					await new Promise((resolve) => setTimeout(resolve, 100));
-
-					if (Object.keys(expandedFolders).length > 0) {
-						const foldersToRestore = { ...expandedFolders };
-
-						for (const [folderPath, isExpanded] of Object.entries(
-							foldersToRestore,
-						)) {
-							if (isExpanded) {
-								setExpandedFolders((prevState) => ({
-									...prevState,
-									[folderPath]: true,
-								}));
-
-								await new Promise((resolve) =>
-									setTimeout(resolve, 10),
-								);
-							}
-						}
-					}
-
-					if (showNotification) {
-						toast.success("Dossier rafraîchi avec succès");
-					}
-				} else {
-					if (showNotification) {
-						toast.error(
-							`Erreur lors du rafraîchissement: ${result.message}`,
-						);
-					}
-				}
-			} catch (error) {
-				console.error("Échec du rafraîchissement:", error);
-				if (showNotification) {
-					toast.error("Impossible de rafraîchir le dossier");
-				}
-			} finally {
-				if (showNotification) {
-					setIsLoading(false);
-				}
-			}
-		},
-		[expandedFolders, isElectron, updateFilesTree],
-	);
-	const toggleFolder = useCallback((path: string) => {
-		const normalizedPath = path.replace(/\\/g, "/");
-
-		setExpandedFolders((prev) => {
-			const newValue = !prev[normalizedPath];
-
-			const newState = { ...prev };
-			newState[normalizedPath] = newValue;
-
-			if (newValue) {
-				setManuallyClosedFolders((prev) =>
-					prev.filter((folder) => folder !== normalizedPath),
-				);
-			} else {
-				setManuallyClosedFolders((prev) => [...prev, normalizedPath]);
-			}
-
-			return newState;
-		});
-	}, []);
-	const closeAllFolders = useCallback(() => {
-		const openedFolders = Object.keys(expandedFolders).filter(
-			(folder) => expandedFolders[folder],
-		);
-
-		const potentialRequiredFolders: string[] = [];
-		if (activeTab?.path && currentDirectory) {
-			const normalizedPath = activeTab.path.replace(/\\/g, "/");
-			const normalizedCurrentDir = currentDirectory.replace(/\\/g, "/");
-
-			let relativePath = normalizedPath.slice(
-				normalizedCurrentDir.length,
-			);
-			if (relativePath.startsWith("/")) {
-				relativePath = relativePath.substring(1);
-			}
-
-			const pathSegments = relativePath.split("/").slice(0, -1);
-			let currentPathBuild = normalizedCurrentDir;
-
-			for (const segment of pathSegments) {
-				if (!segment) continue;
-				currentPathBuild = `${currentPathBuild}/${segment}`;
-				potentialRequiredFolders.push(currentPathBuild);
-			}
-		}
-
-		setExpandedFolders({});
-
-		setManuallyClosedFolders((prev) => {
-			const newClosedFolders = [...prev];
-
-			openedFolders.forEach((folder) => {
-				if (!newClosedFolders.includes(folder)) {
-					newClosedFolders.push(folder);
-				}
-			});
-
-			potentialRequiredFolders.forEach((folder) => {
-				if (!newClosedFolders.includes(folder)) {
-					newClosedFolders.push(folder);
-				}
-			});
-
-			return newClosedFolders;
-		});
-
-		toast.success("Tous les dossiers sont fermés");
-	}, [expandedFolders, activeTab?.path, currentDirectory]);
-
-	const closeDirectory = useCallback(() => {
-		setFiles([]);
-		setExpandedFolders({});
-		setSelectedFolder(null);
-
-		onDirectoryClose();
-
-		toast.success("Dossier fermé");
-	}, [onDirectoryClose]);
+	const {
+		files,
+		expandedFolders,
+		toggleFolder,
+		refreshFolder,
+		closeAllFolders,
+		closeDirectory,
+		updateFilesTree,
+	} = useDirectoryTree();
 
 	const expandToFile = useCallback(
 		async (filePath: string) => {

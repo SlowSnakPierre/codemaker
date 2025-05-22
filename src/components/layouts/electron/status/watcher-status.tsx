@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useFileWatcher } from "@/hooks/useFileWatcher";
 import { Badge } from "@/components/ui/badge";
 import {
 	Tooltip,
@@ -8,7 +8,6 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { forceRestartWatcher } from "@/lib/watcher-utils";
 import { toast } from "sonner";
 
 interface WatcherStatusProps {
@@ -18,69 +17,22 @@ interface WatcherStatusProps {
 export default function WatcherStatus({
 	currentDirectory,
 }: WatcherStatusProps) {
-	const [watcherActive, setWatcherActive] = useState<boolean | null>(null);
-	const [checking, setChecking] = useState(false);
-
-	useEffect(() => {
-		const checkWatcherStatus = async () => {
-			if (
-				!currentDirectory ||
-				typeof window === "undefined" ||
-				!window.electron
-			) {
-				setWatcherActive(false);
-				return;
-			}
-
-			setChecking(true);
-
-			try {
-				const result =
-					await window.electron.restartWatcher(currentDirectory);
-				setWatcherActive(result);
-
-				if (!result) {
-					console.warn("[WatcherStatus] Le watcher semble inactif");
-				}
-			} catch (error) {
-				console.error(
-					"[WatcherStatus] Erreur lors de la vérification du watcher:",
-					error,
-				);
-				setWatcherActive(false);
-			} finally {
-				setChecking(false);
-			}
-		};
-
-		checkWatcherStatus();
-
-		const interval = setInterval(() => void checkWatcherStatus, 30000);
-
-		return () => {
-			clearInterval(interval);
-		};
-	}, [currentDirectory]);
+	const { watcherActive, checking, forceRestartWatcher } =
+		useFileWatcher(currentDirectory);
 
 	const handleForceRestart = async () => {
 		if (!currentDirectory) return;
 
-		setChecking(true);
 		try {
-			const result = await forceRestartWatcher(currentDirectory);
+			const result = await forceRestartWatcher();
 			if (result) {
 				toast.success("Watcher redémarré avec succès");
-				setWatcherActive(true);
 			} else {
 				toast.error("Échec du redémarrage du watcher");
-				setWatcherActive(false);
 			}
 		} catch (error) {
 			console.error("Erreur lors du redémarrage forcé:", error);
 			toast.error("Erreur lors du redémarrage du watcher");
-			setWatcherActive(false);
-		} finally {
-			setChecking(false);
 		}
 	};
 
@@ -100,8 +52,8 @@ export default function WatcherStatus({
 						{checking
 							? "Vérification..."
 							: watcherActive
-								? "Watcher actif"
-								: "Watcher inactif"}
+							? "Watcher actif"
+							: "Watcher inactif"}
 					</Badge>
 				</TooltipTrigger>
 				<TooltipContent side="top">

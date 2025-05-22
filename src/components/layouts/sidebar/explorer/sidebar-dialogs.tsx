@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import React from "react";
 import { toast } from "sonner";
+import { useFileSystem } from "@/hooks/useFileSystem";
 
 type Props = {
 	isLoading: boolean;
@@ -41,27 +42,22 @@ const SidebarDialogs = ({
 	setNewFileName,
 	setNewFolderName,
 }: Props) => {
-	const isElectron = typeof window !== "undefined" && window.electron;
+	const { createFile, createDirectory } = useFileSystem();
 
 	const handleCreateFile = async () => {
-		if (!selectedFolder || !isElectron || !newFileName.trim()) return;
+		if (!selectedFolder || !newFileName.trim()) return;
 
 		setIsLoading(true);
 		try {
-			const result = await window.electron.createFile({
-				dirPath: selectedFolder,
-				fileName: newFileName.trim(),
-			});
+			const result = await createFile(selectedFolder, newFileName.trim());
 
-			if (result.success) {
+			if (result) {
 				refreshFolder(selectedFolder);
 				toast.success(`Fichier "${newFileName}" créé avec succès`);
 				setNewFileName("");
 				setIsCreatingFile(false);
 			} else {
-				toast.error(
-					`Erreur lors de la création du fichier: ${result.message}`,
-				);
+				toast.error(`Erreur lors de la création du fichier`);
 			}
 		} catch (error) {
 			console.error("Échec de création du fichier:", error);
@@ -72,24 +68,19 @@ const SidebarDialogs = ({
 	};
 
 	const handleCreateFolder = async () => {
-		if (!selectedFolder || !isElectron || !newFolderName.trim()) return;
+		if (!selectedFolder || !newFolderName.trim()) return;
 
 		setIsLoading(true);
 		try {
-			const result = await window.electron.createDirectory({
-				dirPath: selectedFolder,
-				folderName: newFolderName.trim(),
-			});
+			const result = await createDirectory(selectedFolder, newFolderName.trim());
 
-			if (result.success) {
+			if (result) {
 				refreshFolder(selectedFolder);
 				toast.success(`Dossier "${newFolderName}" créé avec succès`);
 				setNewFolderName("");
 				setIsCreatingFolder(false);
 			} else {
-				toast.error(
-					`Erreur lors de la création du dossier: ${result.message}`,
-				);
+				toast.error(`Erreur lors de la création du dossier`);
 			}
 		} catch (error) {
 			console.error("Échec de création du dossier:", error);

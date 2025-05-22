@@ -8,28 +8,25 @@ import {
 	FoldersIcon,
 } from "lucide-react";
 import React from "react";
+import { useDirectoryTree } from "@/hooks/useDirectoryTree";
 
 type Props = {
 	isLoading: boolean;
 	currentDirectory: string | null;
-	refreshFolder: (path: string) => void;
 	setSelectedFolder: (path: string) => void;
 	setIsCreatingFile: (creating: boolean) => void;
 	setIsCreatingFolder: (creating: boolean) => void;
-	closeDirectory: () => void;
-	closeAllFolders: () => void;
 };
 
 const SidebarHeader = ({
 	isLoading,
 	currentDirectory,
-	refreshFolder,
 	setSelectedFolder,
 	setIsCreatingFile,
 	setIsCreatingFolder,
-	closeDirectory,
-	closeAllFolders,
 }: Props) => {
+	const { refreshDirectory, closeAllFolders, closeDirectory } = useDirectoryTree();
+
 	return (
 		<div className="p-2 border-b border-border flex items-center justify-between">
 			<h2 className="text-xs font-normal uppercase tracking-wider text-neutral-500 dark:text-neutral-200">
@@ -65,7 +62,7 @@ const SidebarHeader = ({
 							variant="ghost"
 							size="icon"
 							className="h-6 w-6 mr-1 hover:bg-neutral-200"
-							onClick={() => refreshFolder(currentDirectory)}
+							onClick={() => refreshDirectory(currentDirectory)}
 							title="Rafraîchir"
 							disabled={isLoading}
 						>

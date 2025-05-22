@@ -1,13 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import TitleBar from "./topbar";
-import type {
-	FileData,
-	FileTab,
-	FileChangeEvent,
-	RecentProject,
-} from "@/lib/types";
+import type { FileTab, RecentProject } from "@/lib/types";
 import EditorPanel from "@/components/editor/editor-panel";
 import {
 	ResizableHandle,
@@ -26,20 +21,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getLanguageFromFilename } from "@/lib/editor-utils";
-import {
-	startWatcherHealthCheck,
-	stopWatcherHealthCheck,
-} from "@/lib/watcher-utils";
 import PageSelector from "../sidebar/page-selector";
+import { useTabs } from "@/hooks/useTabs";
+import { useFileSystem } from "@/hooks/useFileSystem";
+import { useWindowControls } from "@/hooks/useWindowControls";
+import { TabsProvider } from "@/contexts/TabsContext";
+import { FileSystemProvider } from "@/contexts/FileSystemContext";
 
 const ElectronLayout = () => {
 	const [isClient, setIsClient] = useState(false);
-	const [activeTab, setActiveTab] = useState<string | null>(null);
-	const [tabs, setTabs] = useState<FileTab[]>([]);
-	const [currentDirectory, setCurrentDirectory] = useState<string | null>(
-		null,
-	);
-	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 	const [cursorPosition, setCursorPosition] = useState({
 		line: 1,
 		column: 1,
@@ -48,23 +38,33 @@ const ElectronLayout = () => {
 	const [tabToClose, setTabToClose] = useState<string | null>(null);
 	const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 
+	const { tabs, activeTab, openTab, closeTab, handleTabClick } = useTabs();
+	const {
+		currentDirectory,
+		openDirectory,
+		closeDirectory,
+		readFile,
+		saveFile,
+		createFile,
+		navigateDirectory,
+		refreshDirectory,
+	} = useFileSystem();
+	const { minimizeWindow, maximizeWindow, closeWindow } = useWindowControls();
+
 	const isElectron = typeof window !== "undefined" && window.electron;
 
-	const savedRecentProjects = useCallback(
-		async (projects: RecentProject[]) => {
-			if (!isElectron) return;
+	const savedRecentProjects = async (projects: RecentProject[]) => {
+		if (!isElectron) return;
 
-			try {
-				await window.electron.setSettings({
-					key: "recentProjects",
-					value: projects,
-				});
-			} catch (error) {
-				console.error("Failed to save recent projects:", error);
-			}
-		},
-		[isElectron],
-	);
+		try {
+			await window.electron.setSettings({
+				key: "recentProjects",
+				value: projects,
+			});
+		} catch (error) {
+			console.error("Failed to save recent projects:", error);
+		}
+	};
 
 	const addRecentProject = async (directoryPath: string) => {
 		if (!isElectron) return;
@@ -106,27 +106,16 @@ const ElectronLayout = () => {
 				const { path, content } = result;
 				const fileName = path.split(/[/\\]/).pop() || "Untitled";
 				if (tabs.some((tab) => tab.path === path)) {
-					setActiveTab(
-						tabs.find((tab) => tab.path === path)?.id || null,
-					);
+					handleTabClick(tabs.find((tab) => tab.path === path)?.id || null);
 					return;
 				}
 
-				const newTab: FileTab = {
-					id: `tab-${Date.now()}`,
-					name: fileName,
+				openTab({
 					path,
 					content,
-					active: true,
+					name: fileName,
 					language: getLanguageFromFilename(fileName),
-				};
-
-				setTabs((prevTabs) => [
-					...prevTabs.map((tab) => ({ ...tab, active: false })),
-					newTab,
-				]);
-
-				setActiveTab(newTab.id);
+				});
 				toast.success(`Opened ${fileName}`);
 			}
 		} catch (error) {
@@ -139,9 +128,8 @@ const ElectronLayout = () => {
 		if (!isElectron) return;
 
 		try {
-			const dirPath = await window.electron.openDirectory();
+			const dirPath = await openDirectory();
 			if (dirPath) {
-				setCurrentDirectory(dirPath);
 				await addRecentProject(dirPath);
 				toast.success(
 					`Opened directory: ${dirPath.split(/[/\\]/).pop()}`,
@@ -157,7 +145,7 @@ const ElectronLayout = () => {
 		if (!isElectron) return;
 
 		try {
-			setCurrentDirectory(dir);
+			await openDirectory(dir);
 			await addRecentProject(dir);
 
 			window.electron
@@ -175,7 +163,7 @@ const ElectronLayout = () => {
 	};
 
 	const handleDirectoryClose = () => {
-		setCurrentDirectory(null);
+		closeDirectory();
 		if (isElectron) {
 			window.electron.setSettings({
 				key: "lastOpenDirectory",
@@ -202,9 +190,7 @@ const ElectronLayout = () => {
 
 				if (confirmReload) {
 					try {
-						const content = await window.electron.readFile(
-							tab.path,
-						);
+						const content = await readFile(tab.path);
 						if (content !== null) {
 							setTabs((prevTabs) =>
 								prevTabs.map((t) =>
@@ -233,10 +219,7 @@ const ElectronLayout = () => {
 		}
 
 		try {
-			const savedPath = await window.electron.saveFile({
-				path: tab.path || "",
-				content: tab.content,
-			});
+			const savedPath = await saveFile(tab.path || "", tab.content);
 
 			if (savedPath) {
 				const fileName = savedPath.split(/[/\\]/).pop();
@@ -263,13 +246,7 @@ const ElectronLayout = () => {
 	};
 
 	const handleTabClick = async (tabId: string) => {
-		setActiveTab(tabId);
-		setTabs((prevTabs) =>
-			prevTabs.map((tab) => ({
-				...tab,
-				active: tab.id === tabId,
-			})),
-		);
+		handleTabClick(tabId);
 	};
 
 	const handleTabClose = async (tabId: string) => {
@@ -282,27 +259,6 @@ const ElectronLayout = () => {
 		}
 
 		closeTab(tabId);
-	};
-
-	const closeTab = (tabId: string) => {
-		const isActiveTab = tabs.find((tab) => tab.id === tabId)?.active;
-
-		setTabs((prevTabs) => {
-			const filtered = prevTabs.filter((tab) => tab.id !== tabId);
-
-			if (isActiveTab && filtered.length > 0) {
-				const newActiveIndex = Math.min(
-					prevTabs.findIndex((tab) => tab.id === tabId),
-					filtered.length - 1,
-				);
-				filtered[newActiveIndex].active = true;
-				setActiveTab(filtered[newActiveIndex].id);
-			} else if (filtered.length === 0) {
-				setActiveTab(null);
-			}
-
-			return filtered;
-		});
 	};
 
 	const handleContentChange = async (tabId: string, newContent: string) => {
@@ -327,39 +283,25 @@ const ElectronLayout = () => {
 		if (fileData.isDirectory) return;
 
 		if (tabs.some((tab) => tab.path == fileData.path)) {
-			setActiveTab(
-				tabs.find((tab) => tab.path === fileData.path)?.id || null,
-			);
+			handleTabClick(tabs.find((tab) => tab.path === fileData.path)?.id || null);
 			return;
 		}
 
-		window.electron
-			.readFile(fileData.path)
-			.then((content: string | null) => {
-				if (content === null) throw new Error("Failed to read file");
-				const detectedLanguage = getLanguageFromFilename(fileData.name);
+		try {
+			const content = await readFile(fileData.path);
+			if (content === null) throw new Error("Failed to read file");
+			const detectedLanguage = getLanguageFromFilename(fileData.name);
 
-				const newTab: FileTab = {
-					id: `tab-${Date.now()}`,
-					name: fileData.name,
-					path: fileData.path,
-					content,
-					originalContent: content,
-					active: true,
-					language: detectedLanguage,
-					languageOverride: null,
-				};
-
-				setTabs((prevTabs) => [
-					...prevTabs.map((tab) => ({ ...tab, active: false })),
-					newTab,
-				]);
-				setActiveTab(newTab.id);
-			})
-			.catch((error) => {
-				toast.error(`Failed to open ${fileData.name}`);
-				console.error(error);
+			openTab({
+				path: fileData.path,
+				content,
+				name: fileData.name,
+				language: detectedLanguage,
 			});
+		} catch (error) {
+			toast.error(`Failed to open ${fileData.name}`);
+			console.error(error);
+		}
 	};
 
 	const handleCursorPositionChange = (line: number, column: number) => {
@@ -493,7 +435,7 @@ const ElectronLayout = () => {
 				.getSettings("lastOpenDirectory")
 				.then((dir: string) => {
 					if (dir) {
-						setCurrentDirectory(dir);
+						openDirectory(dir);
 
 						window.electron
 							.restartWatcher(dir)
@@ -516,7 +458,7 @@ const ElectronLayout = () => {
 						const lastActiveTab =
 							savedTabs.find((tab) => tab.active)?.id ||
 							savedTabs[0].id;
-						setActiveTab(lastActiveTab);
+						handleTabClick(lastActiveTab);
 					}
 				}
 			});
@@ -588,7 +530,7 @@ const ElectronLayout = () => {
 									(async () => {
 										try {
 											const content =
-												await window.electron.readFile(
+												await readFile(
 													data.path,
 												);
 											if (content !== null) {
@@ -651,11 +593,11 @@ const ElectronLayout = () => {
 											filtered.length - 1,
 										);
 										filtered[newActiveIndex].active = true;
-										setActiveTab(
+										handleTabClick(
 											filtered[newActiveIndex].id,
 										);
 									} else if (filtered.length === 0) {
-										setActiveTab(null);
+										handleTabClick(null);
 									}
 
 									return filtered;
@@ -735,107 +677,111 @@ const ElectronLayout = () => {
 	}
 
 	return (
-		<div className="flex flex-col h-screen overflow-hidden">
-			<TitleBar
-				isElectron={isClient}
-				onOpenFile={handleFileOpen}
-				onOpenDirectory={handleDirectoryOpen}
-				onSaveFile={() => activeTab && handleFileSave(activeTab)}
-				onToggleSidebar={toggleSidebar}
-				onUndo={handleUndo}
-				onRedo={handleRedo}
-			/>
-			<ResizablePanelGroup direction="horizontal">
-				{!sidebarCollapsed && (
-					<>
-						<PageSelector />
-						<ResizablePanel
-							defaultSize={15}
-							minSize={15}
-							maxSize={20}
-						>
-							<Sidebar
-								currentDirectory={currentDirectory}
-								onFileSelect={handleFileSelect}
-								onDirectoryOpen={handleDirectoryOpen}
-								onDirectoryClose={handleDirectoryClose}
-								activeTab={tabs.find(
-									(tab) => tab.id === activeTab,
-								)}
-							/>
-						</ResizablePanel>
-					</>
-				)}
-				<ResizableHandle />
-				<ResizablePanel defaultSize={80} minSize={30}>
-					<EditorPanel
-						tabs={tabs}
-						activeTabId={activeTab}
-						recentProjects={recentProjects}
-						onTabClick={handleTabClick}
-						onTabClose={handleTabClose}
-						onContentChange={handleContentChange}
-						onSaveFile={handleFileSave}
-						onCursorPositionChange={handleCursorPositionChange}
+		<TabsProvider>
+			<FileSystemProvider>
+				<div className="flex flex-col h-screen overflow-hidden">
+					<TitleBar
+						isElectron={isClient}
 						onOpenFile={handleFileOpen}
-						onDirectoryOpen={handleDirectoryOpen}
-						onSpecificDirectoryOpen={handleSpecificDirectoryOpen}
+						onOpenDirectory={handleDirectoryOpen}
+						onSaveFile={() => activeTab && handleFileSave(activeTab)}
+						onToggleSidebar={toggleSidebar}
 						onUndo={handleUndo}
 						onRedo={handleRedo}
 					/>
-				</ResizablePanel>
-			</ResizablePanelGroup>
-			<StatusBar
-				activeFile={
-					tabs.find((tab) => tab.id === activeTab)?.name || null
-				}
-				language={
-					tabs.find((tab) => tab.id === activeTab)?.language || null
-				}
-				languageOverride={
-					tabs.find((tab) => tab.id === activeTab)?.languageOverride
-				}
-				cursorPosition={cursorPosition}
-				tabSize={2}
-				useTabs={false}
-				onLanguageChange={handleLanguageChange}
-				currentDirectory={currentDirectory}
-			/>
-			<Dialog
-				open={isCloseDialogOpen}
-				onOpenChange={setIsCloseDialogOpen}
-			>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>
-							Enregistrer les modifications ?
-						</DialogTitle>
-					</DialogHeader>
-					<div className="py-3">
-						Le fichier{" "}
-						{tabs.find((tab) => tab.id === tabToClose)?.name} a été
-						modifié. Voulez-vous enregistrer les modifications avant
-						de fermer l&apos;onglet ?
-					</div>
-					<DialogFooter className="flex justify-between sm:justify-between">
-						<Button variant="outline" onClick={handleCancelClose}>
-							Annuler
-						</Button>
-						<div className="flex gap-2">
-							<Button
-								variant="destructive"
-								onClick={handleCloseWithoutSaving}
-							>
-								Fermer sans enregistrer
-							</Button>
-							<Button onClick={handleSaveAndClose}>
-								Sauvegarder
-							</Button>
-						</div>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-		</div>
+					<ResizablePanelGroup direction="horizontal">
+						{!sidebarCollapsed && (
+							<>
+								<PageSelector />
+								<ResizablePanel
+									defaultSize={15}
+									minSize={15}
+									maxSize={20}
+								>
+									<Sidebar
+										currentDirectory={currentDirectory}
+										onFileSelect={handleFileSelect}
+										onDirectoryOpen={handleDirectoryOpen}
+										onDirectoryClose={handleDirectoryClose}
+										activeTab={tabs.find(
+											(tab) => tab.id === activeTab,
+										)}
+									/>
+								</ResizablePanel>
+							</>
+						)}
+						<ResizableHandle />
+						<ResizablePanel defaultSize={80} minSize={30}>
+							<EditorPanel
+								tabs={tabs}
+								activeTabId={activeTab}
+								recentProjects={recentProjects}
+								onTabClick={handleTabClick}
+								onTabClose={handleTabClose}
+								onContentChange={handleContentChange}
+								onSaveFile={handleFileSave}
+								onCursorPositionChange={handleCursorPositionChange}
+								onOpenFile={handleFileOpen}
+								onDirectoryOpen={handleDirectoryOpen}
+								onSpecificDirectoryOpen={handleSpecificDirectoryOpen}
+								onUndo={handleUndo}
+								onRedo={handleRedo}
+							/>
+						</ResizablePanel>
+					</ResizablePanelGroup>
+					<StatusBar
+						activeFile={
+							tabs.find((tab) => tab.id === activeTab)?.name || null
+						}
+						language={
+							tabs.find((tab) => tab.id === activeTab)?.language || null
+						}
+						languageOverride={
+							tabs.find((tab) => tab.id === activeTab)?.languageOverride
+						}
+						cursorPosition={cursorPosition}
+						tabSize={2}
+						useTabs={false}
+						onLanguageChange={handleLanguageChange}
+						currentDirectory={currentDirectory}
+					/>
+					<Dialog
+						open={isCloseDialogOpen}
+						onOpenChange={setIsCloseDialogOpen}
+					>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>
+									Enregistrer les modifications ?
+								</DialogTitle>
+							</DialogHeader>
+							<div className="py-3">
+								Le fichier{" "}
+								{tabs.find((tab) => tab.id === tabToClose)?.name} a été
+								modifié. Voulez-vous enregistrer les modifications avant
+								de fermer l&apos;onglet ?
+							</div>
+							<DialogFooter className="flex justify-between sm:justify-between">
+								<Button variant="outline" onClick={handleCancelClose}>
+									Annuler
+								</Button>
+								<div className="flex gap-2">
+									<Button
+										variant="destructive"
+										onClick={handleCloseWithoutSaving}
+									>
+										Fermer sans enregistrer
+									</Button>
+									<Button onClick={handleSaveAndClose}>
+										Sauvegarder
+									</Button>
+								</div>
+							</DialogFooter>
+						</DialogContent>
+					</Dialog>
+				</div>
+			</FileSystemProvider>
+		</TabsProvider>
 	);
 };
 

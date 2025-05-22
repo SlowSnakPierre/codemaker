@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import React from "react";
 import IndentationBars from "./indentation-bars";
+import { useDirectoryTree } from "@/hooks/useDirectoryTree";
 
 interface FolderItemProps {
 	item: FileData;
@@ -45,6 +46,8 @@ export default function FolderItem({
 	refreshFolder,
 	onFileSelect,
 }: FolderItemProps) {
+	const { openDirectory } = useDirectoryTree();
+
 	const normalizedPath = React.useMemo(() => {
 		return item.path.replace(/\\/g, "/");
 	}, [item.path]);
