@@ -21,53 +21,48 @@ export default function WatcherStatus({
 	const [watcherActive, setWatcherActive] = useState<boolean | null>(null);
 	const [checking, setChecking] = useState(false);
 
-	// Fonction pour vérifier l'état du watcher
-	const checkWatcherStatus = async () => {
-		if (
-			!currentDirectory ||
-			typeof window === "undefined" ||
-			!window.electron
-		) {
-			setWatcherActive(false);
-			return;
-		}
-
-		setChecking(true);
-
-		try {
-			// La fonction restartWatcher retourne true si elle réussit
-			const result = await window.electron.restartWatcher(
-				currentDirectory
-			);
-			setWatcherActive(result);
-
-			if (!result) {
-				console.warn("[WatcherStatus] Le watcher semble inactif");
-			}
-		} catch (error) {
-			console.error(
-				"[WatcherStatus] Erreur lors de la vérification du watcher:",
-				error
-			);
-			setWatcherActive(false);
-		} finally {
-			setChecking(false);
-		}
-	};
-
-	// Vérifier l'état du watcher lorsque le répertoire change
 	useEffect(() => {
+		const checkWatcherStatus = async () => {
+			if (
+				!currentDirectory ||
+				typeof window === "undefined" ||
+				!window.electron
+			) {
+				setWatcherActive(false);
+				return;
+			}
+
+			setChecking(true);
+
+			try {
+				const result = await window.electron.restartWatcher(
+					currentDirectory
+				);
+				setWatcherActive(result);
+
+				if (!result) {
+					console.warn("[WatcherStatus] Le watcher semble inactif");
+				}
+			} catch (error) {
+				console.error(
+					"[WatcherStatus] Erreur lors de la vérification du watcher:",
+					error
+				);
+				setWatcherActive(false);
+			} finally {
+				setChecking(false);
+			}
+		};
+
 		checkWatcherStatus();
 
-		// Vérifier périodiquement (toutes les 30 secondes)
-		const interval = setInterval(checkWatcherStatus, 30000);
+		const interval = setInterval(() => void checkWatcherStatus, 30000);
 
 		return () => {
 			clearInterval(interval);
 		};
 	}, [currentDirectory]);
 
-	// Fonction pour forcer le redémarrage du watcher
 	const handleForceRestart = async () => {
 		if (!currentDirectory) return;
 
@@ -90,7 +85,6 @@ export default function WatcherStatus({
 		}
 	};
 
-	// Ne pas afficher le statut s'il n'y a pas de répertoire ouvert
 	if (!currentDirectory) return null;
 
 	return (

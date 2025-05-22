@@ -70,6 +70,16 @@ export interface ElectronAPI {
 
 	on: (channel: string, callback: (data: any) => void) => void;
 	off: (channel: string) => void;
+
+	onFileChanged: (callback: (event: FileChangeEvent) => void) => void;
+	removeFileChangedListener: (
+		callback: (event: FileChangeEvent) => void
+	) => void;
+
+	runCommand: (
+		command: string,
+		options: { cwd: string }
+	) => Promise<string | null>;
 }
 
 export interface ReadFile {
@@ -101,4 +111,14 @@ export interface FileTab {
 	active?: boolean;
 	modified?: boolean;
 	externallyModified?: boolean;
+}
+
+export interface WatcherInfoState {
+	active: boolean;
+	wasActive: boolean;
+	directory: string;
+	timestamp: string;
+	status: string;
+	lastWatcherDirectory?: string;
+	lastWatcherTimestamp?: string;
 }

@@ -15,6 +15,7 @@ import { Loader2, Save, Plus, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { forceRestartWatcher } from "@/lib/watcher-utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { FileChangeEvent } from "@/lib/types";
 
 interface FileWatcherTesterProps {
 	directory: string | null;
@@ -37,23 +38,21 @@ export default function FileWatcherTester({
 
 	const isElectron = typeof window !== "undefined" && window.electron;
 
-	// Écouter les événements du watcher
 	useEffect(() => {
 		if (!isElectron) return;
 
-		const handleFileChange = (event: { type: string; path: string }) => {
+		const handleFileChange = (event: FileChangeEvent) => {
 			const newEvent = {
 				type: event.type,
 				path: event.path,
 				timestamp: new Date().toLocaleTimeString(),
 			};
 
-			setEvents((prev) => [newEvent, ...prev].slice(0, 50)); // Limiter à 50 événements
+			setEvents((prev) => [newEvent, ...prev].slice(0, 50));
 		};
 
 		window.electron.onFileChanged(handleFileChange);
 
-		// Nettoyer l'écouteur
 		return () => {
 			if (window.electron && window.electron.removeFileChangedListener) {
 				window.electron.removeFileChangedListener(handleFileChange);
@@ -61,7 +60,6 @@ export default function FileWatcherTester({
 		};
 	}, [isElectron]);
 
-	// Créer un fichier de test
 	const handleCreateFile = async () => {
 		if (!directory || !isElectron || !newFileName) {
 			toast.error("Impossible de créer le fichier de test");
@@ -77,7 +75,7 @@ export default function FileWatcherTester({
 			});
 
 			if (result.success) {
-				toast.success(`Fichier créé: ${result.file.name}`);
+				toast.success(`Fichier créé: ${result.file?.name}`);
 			} else {
 				toast.error(`Échec de la création: ${result.message}`);
 			}
@@ -89,7 +87,6 @@ export default function FileWatcherTester({
 		}
 	};
 
-	// Modifier un fichier de test
 	const handleModifyFile = async () => {
 		if (!directory || !isElectron || !newFileName) {
 			toast.error("Impossible de modifier le fichier de test");
@@ -103,7 +100,7 @@ export default function FileWatcherTester({
 			const content = `Contenu modifié le ${new Date().toLocaleString()}`;
 
 			const result = await window.electron.writeFile({
-				filePath,
+				path: filePath,
 				content,
 			});
 
@@ -120,7 +117,6 @@ export default function FileWatcherTester({
 		}
 	};
 
-	// Supprimer un fichier de test
 	const handleDeleteFile = async () => {
 		if (!directory || !isElectron || !newFileName) {
 			toast.error("Impossible de supprimer le fichier de test");
@@ -130,7 +126,6 @@ export default function FileWatcherTester({
 		setIsDeleting(true);
 
 		try {
-			// Utiliser une commande shell pour supprimer le fichier
 			const filePath = `${directory}/${newFileName}`;
 			await window.electron.runCommand(
 				`Remove-Item -Path "${filePath}" -Force`,
@@ -148,7 +143,6 @@ export default function FileWatcherTester({
 		}
 	};
 
-	// Forcer le redémarrage du watcher
 	const handleRestartWatcher = async () => {
 		if (!directory) {
 			toast.error("Aucun répertoire sélectionné");
@@ -166,10 +160,10 @@ export default function FileWatcherTester({
 			}
 		} catch (error) {
 			toast.error("Erreur lors du redémarrage du watcher");
+			console.error(error);
 		}
 	};
 
-	// Effacer les événements
 	const handleClearEvents = () => {
 		setEvents([]);
 		toast.info("Liste d'événements effacée");
@@ -315,7 +309,6 @@ export default function FileWatcherTester({
 	);
 }
 
-// Fonction utilitaire pour obtenir la couleur en fonction du type d'événement
 function getEventTypeColor(eventType: string): string {
 	switch (eventType) {
 		case "add":

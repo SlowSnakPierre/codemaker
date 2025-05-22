@@ -52,7 +52,7 @@ const ElectronLayout = () => {
 				.then((dir: string) => {
 					if (dir) {
 						setCurrentDirectory(dir);
-						// Redémarrer explicitement le watcher pour être sûr
+
 						window.electron
 							.restartWatcher(dir)
 							.then(() =>
@@ -86,16 +86,13 @@ const ElectronLayout = () => {
 		}
 	}, [tabs, isElectron]);
 
-	// Démarrer/arrêter la vérification de santé du watcher quand le répertoire change
 	useEffect(() => {
 		if (isElectron && currentDirectory) {
-			// Démarrer une vérification périodique du watcher toutes les minutes
 			startWatcherHealthCheck(currentDirectory, 60000);
 		} else {
 			stopWatcherHealthCheck();
 		}
 
-		// Nettoyage lors du démontage du composant
 		return () => {
 			stopWatcherHealthCheck();
 		};
@@ -108,7 +105,6 @@ const ElectronLayout = () => {
 			value: currentDirectory,
 		});
 
-		// S'assurer que le watcher est démarré pour ce répertoire
 		window.electron
 			.restartWatcher(currentDirectory)
 			.catch((err) =>
@@ -120,7 +116,6 @@ const ElectronLayout = () => {
 			if (data.type === "add" || data.type === "change") {
 				const tabToUpdate = tabs.find((t) => t.path === data.path);
 				if (tabToUpdate) {
-					// Marquer le fichier comme modifié en externe
 					setTabs((prevTabs) =>
 						prevTabs.map((t) =>
 							t.id === tabToUpdate.id

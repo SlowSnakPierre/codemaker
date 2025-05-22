@@ -12,13 +12,11 @@ export default function DebugPage() {
 	const [currentDirectory, setCurrentDirectory] = useState<string | null>(
 		null
 	);
-	// Le state isClient est utilisé pour afficher différents contenus côté client
+
 	const [_, setIsClient] = useState(false);
 
-	// Vérifier si nous sommes dans un environnement Electron
 	const isElectron = typeof window !== "undefined" && window.electron;
 
-	// Récupérer le répertoire actuel au chargement
 	useEffect(() => {
 		if (isElectron) {
 			setIsClient(true);
@@ -37,7 +35,6 @@ export default function DebugPage() {
 		}
 	}, [isElectron]);
 
-	// Fonction pour sélectionner un répertoire
 	const handleSelectDirectory = async () => {
 		if (!isElectron) {
 			toast.error(

@@ -12,13 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import type { WatcherInfoState } from "@/lib/types";
 
 interface WatcherInfoProps {
 	directory: string | null;
 }
 
 export default function WatcherInfo({ directory }: WatcherInfoProps) {
-	const [watcherInfo, setWatcherInfo] = useState<any>(null);
+	const [watcherInfo, setWatcherInfo] = useState<WatcherInfoState | null>(
+		null
+	);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -34,15 +37,12 @@ export default function WatcherInfo({ directory }: WatcherInfoProps) {
 		setError(null);
 
 		try {
-			// Vérifier d'abord le statut actuel
 			const currentStatus = await window.electron.checkWatcherStatus();
 
-			// Redémarrage du watcher (ce qui confirme aussi son fonctionnement)
 			const restartResult = await window.electron.restartWatcher(
 				directory
 			);
 
-			// Vérifier le statut après redémarrage
 			const newStatus = await window.electron.checkWatcherStatus();
 
 			setWatcherInfo({

@@ -11,7 +11,7 @@ let watcherCheckInterval: NodeJS.Timeout | null = null;
  */
 export function startWatcherHealthCheck(
 	directory: string | null,
-	checkInterval: number = 30000 // 30 secondes par défaut
+	checkInterval: number = 30000
 ): void {
 	if (watcherCheckInterval) {
 		clearInterval(watcherCheckInterval);
@@ -30,7 +30,6 @@ export function startWatcherHealthCheck(
 	);
 
 	watcherCheckInterval = setInterval(() => {
-		// Redémarrer le watcher pour s'assurer qu'il est toujours actif
 		window.electron
 			.restartWatcher(directory)
 			.then(() => console.log("[WatcherHealth] Watcher vérifié et actif"))
