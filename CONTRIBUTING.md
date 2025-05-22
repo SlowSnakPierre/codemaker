@@ -1,104 +1,227 @@
-# Guide de développement pour Codemaker
+# Guide de contribution à Codemaker
 
-Ce document décrit le workflow de développement et les bonnes pratiques pour le projet Codemaker.
+Ce document détaille les processus, conventions et bonnes pratiques à suivre pour contribuer efficacement au projet Codemaker. Que vous soyez développeur, designer, testeur ou rédacteur technique, votre contribution est précieuse !
 
-## Workflow de développement
+## 📋 Sommaire
 
-Nous suivons une version simplifiée de **GitHub Flow** :
+- [Prérequis](#prérequis)
+- [Workflow de développement](#workflow-de-développement)
+- [Style de code](#style-de-code)
+- [Messages de commit](#messages-de-commit)
+- [Pull Requests](#pull-requests)
+- [Tests](#tests)
+- [Documentation](#documentation)
+- [Processus de release](#processus-de-release)
+- [Résolution des problèmes](#résolution-des-problèmes)
 
-1. Créer une branche depuis `main` pour chaque fonctionnalité/correction
-2. Développer et tester vos modifications
-3. Créer une Pull Request pour fusionner dans `main`
-4. Après revue et validation, fusionner dans `main`
+## 🛠️ Prérequis
 
-### Étapes détaillées
+Avant de commencer à contribuer, assurez-vous d'avoir installé :
 
-#### 1. Créer une branche
+- **Node.js** (v18+)
+- **Bun** (dernière version stable)
+- **Git** (2.30.0+)
+- Un éditeur de code ([VS Code](https://code.visualstudio.com/) recommandé avec les extensions suivantes) :
+    - ESLint
+    - Prettier
+    - TypeScript + Plugin
+
+## 🔄 Workflow de développement
+
+Nous utilisons une version simplifiée du modèle **GitHub Flow** :
+
+### 1. Préparer votre environnement
 
 ```bash
-# S'assurer que votre main est à jour
+# Cloner le dépôt
+git clone https://github.com/votre-organisation/codemaker.git
+cd codemaker
+
+# Installer les dépendances
+bun install
+
+# Configurer les hooks git pré-commit
+bun run prepare
+```
+
+### 2. Créer une branche de travail
+
+```bash
+# S'assurer que votre branche main est à jour
 git checkout main
 git pull
 
-# Créer une nouvelle branche
-git checkout -b feature/nom-de-la-fonctionnalite
+# Option 1 : Créer une branche avec notre script automatisé
+bun run new-branch <type> <nom>
+
+# Option 2 : Créer manuellement une branche
+git checkout -b type/description-concise
 ```
 
-Nomenclature des branches :
+#### Nomenclature des branches
 
 - `feature/...` - Nouvelles fonctionnalités
 - `fix/...` - Corrections de bugs
-- `docs/...` - Documentation
-- `refactor/...` - Refactoring de code
-- `chore/...` - Autres modifications
+- `docs/...` - Améliorations de la documentation
+- `refactor/...` - Refactoring sans ajout de fonctionnalité
+- `test/...` - Ajout ou modification de tests
+- `perf/...` - Améliorations de performance
+- `chore/...` - Maintenance, modifications d'outils, etc.
 
-#### 2. Développer
-
-Travaillez sur vos modifications. Committez régulièrement avec des messages descriptifs suivant la convention [Conventional Commits](https://www.conventionalcommits.org/) :
+### 3. Développer et tester
 
 ```bash
-git add .
-git commit -m "feat: ajouter la fonctionnalité X"
+# Lancer l'application en mode développement
+bun run dev
+
+# Vérifier le code (lint, types, format)
+bun run validate
 ```
 
-Types de commits principaux :
+### 4. Créer une Pull Request
+
+```bash
+# Option 1 : Utiliser notre script automatisé
+bun run new-pr
+
+# Option 2 : Pousser manuellement les changements
+git push -u origin votre-branche
+```
+
+Puis, sur GitHub :
+
+1. Naviguez vers votre branche
+2. Cliquez sur "Compare & pull request"
+3. Remplissez le template avec :
+    - Un titre clair suivant la convention Conventional Commits
+    - Une description détaillée des changements
+    - Des références aux issues associées (#123)
+4. Demandez une revue à au moins un membre de l'équipe
+5. Attendez les retours et apportez les modifications nécessaires
+
+## 💻 Style de code
+
+Nous utilisons plusieurs outils pour maintenir la cohérence et la qualité du code :
+
+- **TypeScript** pour le typage statique
+- **ESLint** pour l'analyse de code
+- **Prettier** pour le formatage
+- **Husky + lint-staged** pour la validation pré-commit
+
+```bash
+# Vérifier le typage
+bun run typecheck
+
+# Linter
+bun run lint
+
+# Formater le code
+bun run format:write
+
+# Vérification complète
+bun run validate
+```
+
+### Conventions importantes
+
+- Indentation avec des tabulations (configuré dans Prettier)
+- Nommage en camelCase pour les variables et fonctions
+- PascalCase pour les composants React et les classes
+- Types explicites partout où c'est possible
+- Pas de `any` sauf cas exceptionnels (à justifier dans un commentaire)
+- Commentaires JSDoc pour les fonctions publiques
+
+## 📝 Messages de commit
+
+Nous suivons la convention [Conventional Commits](https://www.conventionalcommits.org/) :
+
+```
+<type>[scope optional]: <description>
+
+[corps optional]
+
+[pied de page optional]
+```
+
+### Types de commit
 
 - `feat:` - Nouvelle fonctionnalité
 - `fix:` - Correction de bug
 - `docs:` - Documentation
-- `style:` - Formatage
-- `refactor:` - Refactoring de code
-- `test:` - Tests
-- `chore:` - Autres modifications
+- `style:` - Formatage (sans changement fonctionnel)
+- `refactor:` - Refactoring (sans changement fonctionnel)
+- `perf:` - Amélioration des performances
+- `test:` - Ajout ou modification de tests
+- `build:` - Changements système de build ou dépendances
+- `ci:` - Changements workflow CI
+- `chore:` - Autres changements
 
-#### 3. Pousser et créer une Pull Request
+### Exemples
 
-```bash
-git push -u origin feature/nom-de-la-fonctionnalite
+```
+feat(editor): ajouter la fonction de complétion de code
+
+fix(explorer): corriger le problème de rafraîchissement des dossiers
+
+docs: mettre à jour la documentation de l'API
 ```
 
-Ensuite, créez une Pull Request sur GitHub :
+### Bonnes pratiques
 
-1. Allez sur le [dépôt GitHub](https://github.com/votre-organisation/codemaker)
-2. Cliquez sur "Compare & pull request"
-3. Remplissez le template avec une description claire
-4. Demandez une revue à au moins un membre de l'équipe
+- Un commit = une modification logique
+- Préférez plusieurs petits commits cohérents
+- Premier ligne de 50 caractères max
+- Corps du message détaillé si nécessaire (quoi, pourquoi, pas comment)
+- Mentionnez les issues associées : "fixes #123"
 
-#### 4. Revue de code et fusion
+## 🧪 Tests
 
-Une fois la PR approuvée, elle peut être fusionnée dans `main`.
+Pour chaque nouvelle fonctionnalité ou correction, nous encourageons l'ajout de tests :
 
-## Process de release
+```bash
+# Exécuter les tests
+bun run test
 
-Les releases sont gérées par le mainteneur principal :
+# Mode watch pendant le développement
+bun run test:watch
+```
 
-1. Mettre à jour la version :
+Types de tests à considérer :
 
-    ```bash
-    bun run release [patch|minor|major] [beta|alpha]
-    ```
+- Tests unitaires pour les fonctions et composants isolés
+- Tests d'intégration pour les interactions entre modules
+- Tests d'interface utilisateur pour valider l'expérience utilisateur
 
-2. Cette commande :
-    - Met à jour la version dans package.json
-    - Crée un tag git
-    - Déclenche le workflow de release GitHub
-    - Construit les packages pour toutes les plateformes
+## 📚 Documentation
 
-## Bonnes pratiques
+La documentation est essentielle pour rendre le projet accessible :
 
-### Code
+- Documentez les nouvelles fonctionnalités dans README.md
+- Mettez à jour la documentation technique si nécessaire
+- Ajoutez des commentaires JSDoc aux fonctions publiques
+- Pour les changements majeurs d'API, mettez à jour les exemples de code
 
-- Utilisez TypeScript pour tout nouveau code
-- Commentez les parties complexes ou non évidentes
-- Suivez les conventions de style du projet (enforced by ESLint & Prettier)
-- Écrivez des tests pour les nouvelles fonctionnalités
+## 🚢 Processus de release
 
-### Commits
+Les releases sont gérées par les mainteneurs du projet :
 
-- Préférez plusieurs petits commits ciblés plutôt qu'un gros commit
-- Chaque commit doit représenter une unité logique de changement
-- Suivez la convention Conventional Commits
-- Si un commit résout une issue, mentionnez-la avec "fixes #123"
+```bash
+# Créer une nouvelle release (par défaut: patch)
+bun run release [patch|minor|major] [beta|alpha]
+```
+
+## 🆘 Résolution des problèmes
+
+Si vous rencontrez des difficultés :
+
+1. Vérifiez les issues existantes
+2. Consultez la documentation technique
+3. Demandez de l'aide dans les discussions GitHub
+4. Contactez un mainteneur pour des cas complexes
+
+---
+
+Merci de contribuer à Codemaker ! Votre implication aide à faire de ce projet un meilleur outil pour tous les développeurs. ❤️
 
 ### Revue de code
 
