@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import TitleBar from "./topbar";
-import type { FileData, FileTab, FileChangeEvent } from "@/lib/types";
+import type {
+	FileData,
+	FileTab,
+	FileChangeEvent,
+	RecentProject,
+} from "@/lib/types";
 import EditorPanel from "@/components/editor/editor-panel";
 import {
 	ResizableHandle,
@@ -41,13 +46,450 @@ const ElectronLayout = () => {
 	});
 	const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
 	const [tabToClose, setTabToClose] = useState<string | null>(null);
+	const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 
 	const isElectron = typeof window !== "undefined" && window.electron;
+
+	const savedRecentProjects = useCallback(
+		async (projects: RecentProject[]) => {
+			if (!isElectron) return;
+
+			try {
+				await window.electron.setSettings({
+					key: "recentProjects",
+					value: projects,
+				});
+			} catch (error) {
+				console.error("Failed to save recent projects:", error);
+			}
+		},
+		[isElectron]
+	);
+
+	const addRecentProject = async (directoryPath: string) => {
+		if (!isElectron) return;
+
+		try {
+			const dirName = directoryPath.split(/[/\\]/).pop() || "Unknown";
+			const newProject: RecentProject = {
+				name: dirName,
+				path: directoryPath,
+				lastOpened: new Date().toISOString(),
+			};
+
+			setRecentProjects((prevProjects) => {
+				const filteredProjects = prevProjects.filter(
+					(p) => p.path !== directoryPath
+				);
+				const updatedProjects = [newProject, ...filteredProjects].slice(
+					0,
+					10
+				);
+				savedRecentProjects(updatedProjects);
+				return updatedProjects;
+			});
+		} catch (error) {
+			console.error("Failed to add recent project:", error);
+		}
+	};
+
+	const toggleSidebar = () => {
+		setSidebarCollapsed((prev) => !prev);
+	};
+
+	const handleFileOpen = async () => {
+		if (!isElectron) return;
+
+		try {
+			const result = await window.electron.openFile();
+			if (result) {
+				const { path, content } = result;
+				const fileName = path.split(/[/\\]/).pop() || "Untitled";
+				if (tabs.some((tab) => tab.path === path)) {
+					setActiveTab(
+						tabs.find((tab) => tab.path === path)?.id || null
+					);
+					return;
+				}
+
+				const newTab: FileTab = {
+					id: `tab-${Date.now()}`,
+					name: fileName,
+					path,
+					content,
+					active: true,
+					language: getLanguageFromFilename(fileName),
+				};
+
+				setTabs((prevTabs) => [
+					...prevTabs.map((tab) => ({ ...tab, active: false })),
+					newTab,
+				]);
+
+				setActiveTab(newTab.id);
+				toast.success(`Opened ${fileName}`);
+			}
+		} catch (error) {
+			toast.error("Failed to open file");
+			console.error(error);
+		}
+	};
+
+	const handleDirectoryOpen = async () => {
+		if (!isElectron) return;
+
+		try {
+			const dirPath = await window.electron.openDirectory();
+			if (dirPath) {
+				setCurrentDirectory(dirPath);
+				await addRecentProject(dirPath);
+				toast.success(
+					`Opened directory: ${dirPath.split(/[/\\]/).pop()}`
+				);
+			}
+		} catch (error) {
+			toast.error("Failed to open directory");
+			console.error(error);
+		}
+	};
+
+	const handleSpecificDirectoryOpen = async (dir: string) => {
+		if (!isElectron) return;
+
+		try {
+			setCurrentDirectory(dir);
+			await addRecentProject(dir);
+
+			window.electron
+				.restartWatcher(dir)
+				.then(() => console.log("Watcher redémarré pour:", dir))
+				.catch((err) =>
+					console.error("Échec du redémarrage du watcher:", err)
+				);
+
+			toast.success(`Opened directory: ${dir.split(/[/\\]/).pop()}`);
+		} catch (error) {
+			toast.error("Failed to open directory");
+			console.error(error);
+		}
+	};
+
+	const handleDirectoryClose = () => {
+		setCurrentDirectory(null);
+		if (isElectron) {
+			window.electron.setSettings({
+				key: "lastOpenDirectory",
+				value: null,
+			});
+		}
+	};
+
+	const handleFileSave = async (tabId: string) => {
+		if (!isElectron) return;
+
+		const tab = tabs.find((t) => t.id === tabId);
+		if (!tab) return;
+
+		if (tab.externallyModified && tab.path) {
+			const confirmSave = window.confirm(
+				`Le fichier "${tab.name}" a été modifié en dehors de l'éditeur. Voulez-vous vraiment l'écraser ?`
+			);
+
+			if (!confirmSave) {
+				const confirmReload = window.confirm(
+					"Voulez-vous recharger le fichier depuis le disque ?"
+				);
+
+				if (confirmReload) {
+					try {
+						const content = await window.electron.readFile(
+							tab.path
+						);
+						if (content !== null) {
+							setTabs((prevTabs) =>
+								prevTabs.map((t) =>
+									t.id === tabId
+										? {
+												...t,
+												content,
+												originalContent: content,
+												modified: false,
+												externallyModified: false,
+										  }
+										: t
+								)
+							);
+							toast.success(`Fichier ${tab.name} rechargé`);
+						}
+					} catch (error) {
+						toast.error(
+							`Impossible de recharger le fichier ${tab.name}`
+						);
+						console.error(error);
+					}
+				}
+				return;
+			}
+		}
+
+		try {
+			const savedPath = await window.electron.saveFile({
+				path: tab.path || "",
+				content: tab.content,
+			});
+
+			if (savedPath) {
+				const fileName = savedPath.split(/[/\\]/).pop();
+				setTabs((prevTabs) =>
+					prevTabs.map((t) =>
+						t.id === tabId
+							? {
+									...t,
+									path: savedPath,
+									name: fileName || "Untitled",
+									modified: false,
+									externallyModified: false,
+									originalContent: t.content,
+							  }
+							: t
+					)
+				);
+				toast.success(`Sauvegardé: ${fileName}`);
+			}
+		} catch (error) {
+			toast.error("Échec de la sauvegarde du fichier");
+			console.error(error);
+		}
+	};
+
+	const handleTabClick = async (tabId: string) => {
+		setActiveTab(tabId);
+		setTabs((prevTabs) =>
+			prevTabs.map((tab) => ({
+				...tab,
+				active: tab.id === tabId,
+			}))
+		);
+	};
+
+	const handleTabClose = async (tabId: string) => {
+		const tabToClose = tabs.find((tab) => tab.id === tabId);
+
+		if (tabToClose?.modified) {
+			setTabToClose(tabId);
+			setIsCloseDialogOpen(true);
+			return;
+		}
+
+		closeTab(tabId);
+	};
+
+	const closeTab = (tabId: string) => {
+		const isActiveTab = tabs.find((tab) => tab.id === tabId)?.active;
+
+		setTabs((prevTabs) => {
+			const filtered = prevTabs.filter((tab) => tab.id !== tabId);
+
+			if (isActiveTab && filtered.length > 0) {
+				const newActiveIndex = Math.min(
+					prevTabs.findIndex((tab) => tab.id === tabId),
+					filtered.length - 1
+				);
+				filtered[newActiveIndex].active = true;
+				setActiveTab(filtered[newActiveIndex].id);
+			} else if (filtered.length === 0) {
+				setActiveTab(null);
+			}
+
+			return filtered;
+		});
+	};
+
+	const handleContentChange = async (tabId: string, newContent: string) => {
+		setTabs((prevTabs) =>
+			prevTabs.map((tab) => {
+				if (tab.id === tabId) {
+					const isOriginalContent =
+						tab.originalContent === newContent;
+					return {
+						...tab,
+						content: newContent,
+						modified: !isOriginalContent,
+					};
+				}
+				return tab;
+			})
+		);
+	};
+
+	const handleFileSelect = async (fileData: FileData) => {
+		if (!isElectron) return;
+		if (fileData.isDirectory) return;
+
+		if (tabs.some((tab) => tab.path == fileData.path)) {
+			setActiveTab(
+				tabs.find((tab) => tab.path === fileData.path)?.id || null
+			);
+			return;
+		}
+
+		window.electron
+			.readFile(fileData.path)
+			.then((content: string | null) => {
+				if (content === null) throw new Error("Failed to read file");
+				const detectedLanguage = getLanguageFromFilename(fileData.name);
+
+				const newTab: FileTab = {
+					id: `tab-${Date.now()}`,
+					name: fileData.name,
+					path: fileData.path,
+					content,
+					originalContent: content,
+					active: true,
+					language: detectedLanguage,
+					languageOverride: null,
+				};
+
+				setTabs((prevTabs) => [
+					...prevTabs.map((tab) => ({ ...tab, active: false })),
+					newTab,
+				]);
+				setActiveTab(newTab.id);
+			})
+			.catch((error) => {
+				toast.error(`Failed to open ${fileData.name}`);
+				console.error(error);
+			});
+	};
+
+	const handleCursorPositionChange = (line: number, column: number) => {
+		setCursorPosition({ line, column });
+	};
+
+	const handleLanguageChange = (language: string) => {
+		if (!activeTab) return;
+
+		setTabs((prevTabs) =>
+			prevTabs.map((tab) => {
+				if (tab.id === activeTab) {
+					const finalLanguage =
+						language === "auto"
+							? getLanguageFromFilename(tab.name)
+							: language;
+
+					return {
+						...tab,
+						language: finalLanguage,
+
+						languageOverride: language === "auto" ? null : language,
+					};
+				}
+				return tab;
+			})
+		);
+	};
+
+	const handleUndo = () => {
+		if (
+			activeTab &&
+			typeof window !== "undefined" &&
+			window.__MONACO_EDITOR_INSTANCE__
+		) {
+			window.__MONACO_EDITOR_INSTANCE__.trigger("keyboard", "undo", null);
+
+			setTimeout(() => {
+				if (activeTab && window.__MONACO_EDITOR_INSTANCE__) {
+					const currentContent =
+						window.__MONACO_EDITOR_INSTANCE__.getValue();
+
+					setTabs((prevTabs) =>
+						prevTabs.map((tab) => {
+							if (tab.id === activeTab) {
+								const isOriginalContent =
+									tab.originalContent === currentContent;
+								return { ...tab, modified: !isOriginalContent };
+							}
+							return tab;
+						})
+					);
+				}
+			}, 0);
+		}
+	};
+
+	const handleRedo = () => {
+		if (
+			activeTab &&
+			typeof window !== "undefined" &&
+			window.__MONACO_EDITOR_INSTANCE__
+		) {
+			window.__MONACO_EDITOR_INSTANCE__.trigger("keyboard", "redo", null);
+
+			setTimeout(() => {
+				if (activeTab && window.__MONACO_EDITOR_INSTANCE__) {
+					const currentContent =
+						window.__MONACO_EDITOR_INSTANCE__.getValue();
+
+					setTabs((prevTabs) =>
+						prevTabs.map((tab) => {
+							if (tab.id === activeTab) {
+								const isOriginalContent =
+									tab.originalContent === currentContent;
+								return { ...tab, modified: !isOriginalContent };
+							}
+							return tab;
+						})
+					);
+				}
+			}, 0);
+		}
+	};
+
+	const handleSaveAndClose = async () => {
+		if (tabToClose) {
+			await handleFileSave(tabToClose);
+			closeTab(tabToClose);
+			setIsCloseDialogOpen(false);
+			setTabToClose(null);
+		}
+	};
+
+	const handleCloseWithoutSaving = () => {
+		if (tabToClose) {
+			closeTab(tabToClose);
+			setIsCloseDialogOpen(false);
+			setTabToClose(null);
+		}
+	};
+
+	const handleCancelClose = () => {
+		setIsCloseDialogOpen(false);
+		setTabToClose(null);
+	};
+
 	useEffect(() => {
+		const loadRecentProjects = async () => {
+			if (!isElectron) return;
+
+			try {
+				const savedRecentProjects = await window.electron.getSettings(
+					"recentProjects"
+				);
+				if (savedRecentProjects && Array.isArray(savedRecentProjects)) {
+					setRecentProjects(savedRecentProjects);
+				}
+			} catch (error) {
+				console.error("Failed to load recent projects:", error);
+			}
+		};
+
 		setIsClient(false);
 
 		if (isElectron) {
 			setIsClient(true);
+
+			loadRecentProjects();
+
 			window.electron
 				.getSettings("lastOpenDirectory")
 				.then((dir: string) => {
@@ -237,372 +679,50 @@ const ElectronLayout = () => {
 		};
 	}, [currentDirectory, isElectron, tabs]);
 
-	const toggleSidebar = () => {
-		setSidebarCollapsed((prev) => !prev);
-	};
+	useEffect(() => {
+		const validateRecentProject = async (directoryPath: string) => {
+			if (!isElectron) return false;
 
-	const handleFileOpen = async () => {
-		if (!isElectron) return;
+			console.log(directoryPath);
 
-		try {
-			const result = await window.electron.openFile();
-			if (result) {
-				const { path, content } = result;
-				const fileName = path.split(/[/\\]/).pop() || "Untitled";
-				if (tabs.some((tab) => tab.path === path)) {
-					setActiveTab(
-						tabs.find((tab) => tab.path === path)?.id || null
-					);
-					return;
+			try {
+				const result = await window.electron.directoryExists(
+					directoryPath
+				);
+				console.log(result);
+				return result;
+			} catch (error) {
+				console.error("Failed to validate recent project:", error);
+				return false;
+			}
+		};
+
+		const cleanupRecentProjects = async () => {
+			if (!isElectron || recentProjects.length === 0) return;
+
+			const validProjects: RecentProject[] = [];
+			for (const project of recentProjects) {
+				const isValid = await validateRecentProject(project.path);
+				if (isValid) {
+					validProjects.push(project);
 				}
-
-				const newTab: FileTab = {
-					id: `tab-${Date.now()}`,
-					name: fileName,
-					path,
-					content,
-					active: true,
-					language: getLanguageFromFilename(fileName),
-				};
-
-				setTabs((prevTabs) => [
-					...prevTabs.map((tab) => ({ ...tab, active: false })),
-					newTab,
-				]);
-
-				setActiveTab(newTab.id);
-				toast.success(`Opened ${fileName}`);
-			}
-		} catch (error) {
-			toast.error("Failed to open file");
-			console.error(error);
-		}
-	};
-
-	const handleDirectoryOpen = async () => {
-		if (!isElectron) return;
-
-		try {
-			const dirPath = await window.electron.openDirectory();
-			if (dirPath) {
-				setCurrentDirectory(dirPath);
-				toast.success(
-					`Opened directory: ${dirPath.split(/[/\\]/).pop()}`
-				);
-			}
-		} catch (error) {
-			toast.error("Failed to open directory");
-			console.error(error);
-		}
-	};
-
-	const handleSpecificDirectoryOpen = async (dir: string) => {
-		if (!isElectron) return;
-
-		try {
-			setCurrentDirectory(dir);
-
-			window.electron
-				.restartWatcher(dir)
-				.then(() => console.log("Watcher redémarré pour:", dir))
-				.catch((err) =>
-					console.error("Échec du redémarrage du watcher:", err)
-				);
-
-			toast.success(`Opened directory: ${dir.split(/[/\\]/).pop()}`);
-		} catch (error) {
-			toast.error("Failed to open directory");
-			console.error(error);
-		}
-	};
-
-	const handleDirectoryClose = () => {
-		setCurrentDirectory(null);
-		if (isElectron) {
-			window.electron.setSettings({
-				key: "lastOpenDirectory",
-				value: null,
-			});
-		}
-	};
-	const handleFileSave = async (tabId: string) => {
-		if (!isElectron) return;
-
-		const tab = tabs.find((t) => t.id === tabId);
-		if (!tab) return;
-
-		if (tab.externallyModified && tab.path) {
-			const confirmSave = window.confirm(
-				`Le fichier "${tab.name}" a été modifié en dehors de l'éditeur. Voulez-vous vraiment l'écraser ?`
-			);
-
-			if (!confirmSave) {
-				const confirmReload = window.confirm(
-					"Voulez-vous recharger le fichier depuis le disque ?"
-				);
-
-				if (confirmReload) {
-					try {
-						const content = await window.electron.readFile(
-							tab.path
-						);
-						if (content !== null) {
-							setTabs((prevTabs) =>
-								prevTabs.map((t) =>
-									t.id === tabId
-										? {
-												...t,
-												content,
-												originalContent: content,
-												modified: false,
-												externallyModified: false,
-										  }
-										: t
-								)
-							);
-							toast.success(`Fichier ${tab.name} rechargé`);
-						}
-					} catch (error) {
-						toast.error(
-							`Impossible de recharger le fichier ${tab.name}`
-						);
-						console.error(error);
-					}
-				}
-				return;
-			}
-		}
-
-		try {
-			const savedPath = await window.electron.saveFile({
-				path: tab.path || "",
-				content: tab.content,
-			});
-
-			if (savedPath) {
-				const fileName = savedPath.split(/[/\\]/).pop();
-				setTabs((prevTabs) =>
-					prevTabs.map((t) =>
-						t.id === tabId
-							? {
-									...t,
-									path: savedPath,
-									name: fileName || "Untitled",
-									modified: false,
-									externallyModified: false,
-									originalContent: t.content,
-							  }
-							: t
-					)
-				);
-				toast.success(`Sauvegardé: ${fileName}`);
-			}
-		} catch (error) {
-			toast.error("Échec de la sauvegarde du fichier");
-			console.error(error);
-		}
-	};
-
-	const handleTabClick = async (tabId: string) => {
-		setActiveTab(tabId);
-		setTabs((prevTabs) =>
-			prevTabs.map((tab) => ({
-				...tab,
-				active: tab.id === tabId,
-			}))
-		);
-	};
-	const handleTabClose = async (tabId: string) => {
-		const tabToClose = tabs.find((tab) => tab.id === tabId);
-
-		if (tabToClose?.modified) {
-			setTabToClose(tabId);
-			setIsCloseDialogOpen(true);
-			return;
-		}
-
-		closeTab(tabId);
-	};
-
-	const closeTab = (tabId: string) => {
-		const isActiveTab = tabs.find((tab) => tab.id === tabId)?.active;
-
-		setTabs((prevTabs) => {
-			const filtered = prevTabs.filter((tab) => tab.id !== tabId);
-
-			if (isActiveTab && filtered.length > 0) {
-				const newActiveIndex = Math.min(
-					prevTabs.findIndex((tab) => tab.id === tabId),
-					filtered.length - 1
-				);
-				filtered[newActiveIndex].active = true;
-				setActiveTab(filtered[newActiveIndex].id);
-			} else if (filtered.length === 0) {
-				setActiveTab(null);
 			}
 
-			return filtered;
-		});
-	};
-	const handleContentChange = async (tabId: string, newContent: string) => {
-		setTabs((prevTabs) =>
-			prevTabs.map((tab) => {
-				if (tab.id === tabId) {
-					const isOriginalContent =
-						tab.originalContent === newContent;
-					return {
-						...tab,
-						content: newContent,
-						modified: !isOriginalContent,
-					};
-				}
-				return tab;
-			})
-		);
-	};
+			if (validProjects.length !== recentProjects.length) {
+				setRecentProjects(validProjects);
+				await savedRecentProjects(validProjects);
+			}
+		};
 
-	const handleFileSelect = async (fileData: FileData) => {
-		if (!isElectron) return;
-		if (fileData.isDirectory) return;
-
-		if (tabs.some((tab) => tab.path == fileData.path)) {
-			setActiveTab(
-				tabs.find((tab) => tab.path === fileData.path)?.id || null
-			);
-			return;
+		if (isElectron && recentProjects.length > 0) {
+			cleanupRecentProjects();
 		}
-
-		window.electron
-			.readFile(fileData.path)
-			.then((content: string | null) => {
-				if (content === null) throw new Error("Failed to read file");
-				const detectedLanguage = getLanguageFromFilename(fileData.name);
-
-				const newTab: FileTab = {
-					id: `tab-${Date.now()}`,
-					name: fileData.name,
-					path: fileData.path,
-					content,
-					originalContent: content,
-					active: true,
-					language: detectedLanguage,
-					languageOverride: null,
-				};
-
-				setTabs((prevTabs) => [
-					...prevTabs.map((tab) => ({ ...tab, active: false })),
-					newTab,
-				]);
-				setActiveTab(newTab.id);
-			})
-			.catch((error) => {
-				toast.error(`Failed to open ${fileData.name}`);
-				console.error(error);
-			});
-	};
-	const handleCursorPositionChange = (line: number, column: number) => {
-		setCursorPosition({ line, column });
-	};
-	const handleLanguageChange = (language: string) => {
-		if (!activeTab) return;
-
-		setTabs((prevTabs) =>
-			prevTabs.map((tab) => {
-				if (tab.id === activeTab) {
-					const finalLanguage =
-						language === "auto"
-							? getLanguageFromFilename(tab.name)
-							: language;
-
-					return {
-						...tab,
-						language: finalLanguage,
-
-						languageOverride: language === "auto" ? null : language,
-					};
-				}
-				return tab;
-			})
-		);
-	};
-
-	const handleUndo = () => {
-		if (
-			activeTab &&
-			typeof window !== "undefined" &&
-			window.__MONACO_EDITOR_INSTANCE__
-		) {
-			window.__MONACO_EDITOR_INSTANCE__.trigger("keyboard", "undo", null);
-
-			setTimeout(() => {
-				if (activeTab && window.__MONACO_EDITOR_INSTANCE__) {
-					const currentContent =
-						window.__MONACO_EDITOR_INSTANCE__.getValue();
-
-					setTabs((prevTabs) =>
-						prevTabs.map((tab) => {
-							if (tab.id === activeTab) {
-								const isOriginalContent =
-									tab.originalContent === currentContent;
-								return { ...tab, modified: !isOriginalContent };
-							}
-							return tab;
-						})
-					);
-				}
-			}, 0);
-		}
-	};
-
-	const handleRedo = () => {
-		if (
-			activeTab &&
-			typeof window !== "undefined" &&
-			window.__MONACO_EDITOR_INSTANCE__
-		) {
-			window.__MONACO_EDITOR_INSTANCE__.trigger("keyboard", "redo", null);
-
-			setTimeout(() => {
-				if (activeTab && window.__MONACO_EDITOR_INSTANCE__) {
-					const currentContent =
-						window.__MONACO_EDITOR_INSTANCE__.getValue();
-
-					setTabs((prevTabs) =>
-						prevTabs.map((tab) => {
-							if (tab.id === activeTab) {
-								const isOriginalContent =
-									tab.originalContent === currentContent;
-								return { ...tab, modified: !isOriginalContent };
-							}
-							return tab;
-						})
-					);
-				}
-			}, 0);
-		}
-	};
-
-	const handleSaveAndClose = async () => {
-		if (tabToClose) {
-			await handleFileSave(tabToClose);
-			closeTab(tabToClose);
-			setIsCloseDialogOpen(false);
-			setTabToClose(null);
-		}
-	};
-
-	const handleCloseWithoutSaving = () => {
-		if (tabToClose) {
-			closeTab(tabToClose);
-			setIsCloseDialogOpen(false);
-			setTabToClose(null);
-		}
-	};
-
-	const handleCancelClose = () => {
-		setIsCloseDialogOpen(false);
-		setTabToClose(null);
-	};
+	}, [
+		isElectron,
+		recentProjects,
+		recentProjects.length,
+		savedRecentProjects,
+	]);
 
 	if (!isClient) {
 		return null;
@@ -645,6 +765,7 @@ const ElectronLayout = () => {
 					<EditorPanel
 						tabs={tabs}
 						activeTabId={activeTab}
+						recentProjects={recentProjects}
 						onTabClick={handleTabClick}
 						onTabClose={handleTabClose}
 						onContentChange={handleContentChange}

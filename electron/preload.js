@@ -17,27 +17,41 @@ ipcRenderer.on("app-close-attempted", () => {
 });
 
 contextBridge.exposeInMainWorld("electron", {
+	// Gestion des dossiers
 	openDirectory: () => ipcRenderer.invoke("dialog:openDirectory"),
+	readDirectory: (dirPath) => ipcRenderer.invoke("fs:readDirectory", dirPath),
+	createDirectory: (params) =>
+		ipcRenderer.invoke("fs:createDirectory", params),
+	refreshDirectory: (dirPath) =>
+		ipcRenderer.invoke("fs:refreshDirectory", dirPath),
+	directoryExists: (dirPath) =>
+		ipcRenderer.invoke("fs:directoryExists", dirPath),
+
+	// Gestion des fichiers
 	openFile: () => ipcRenderer.invoke("dialog:openFile"),
 	saveFile: (params) => ipcRenderer.invoke("dialog:saveFile", params),
-
-	readDirectory: (dirPath) => ipcRenderer.invoke("fs:readDirectory", dirPath),
 	readFile: (filePath) => ipcRenderer.invoke("fs:readFile", filePath),
 	writeFile: (params) => ipcRenderer.invoke("fs:writeFile", params),
 	createFile: (params) => ipcRenderer.invoke("fs:createFile", params),
-	createDirectory: (params) =>
-		ipcRenderer.invoke("fs:createDirectory", params),
 	getFileType: (filePath) => ipcRenderer.invoke("fs:getFileType", filePath),
-	refreshDirectory: (dirPath) =>
-		ipcRenderer.invoke("fs:refreshDirectory", dirPath),
+
+	// Surveillance de fichiers
 	restartWatcher: (dirPath) =>
 		ipcRenderer.invoke("fs:restartWatcher", dirPath),
 	checkWatcherStatus: () => ipcRenderer.invoke("fs:checkWatcherStatus"),
+	onFileChanged: (callback) => {
+		listeners["fs:fileChanged"] = callback;
+	},
+	removeFileChangedListener: () => {
+		delete listeners["fs:fileChanged"];
+	},
 
+	// Gestion de l'application
 	minimizeWindow: () => ipcRenderer.invoke("window:minimize"),
 	maximizeWindow: () => ipcRenderer.invoke("window:maximize"),
 	closeWindow: () => ipcRenderer.invoke("window:close"),
 
+	// Gestion du contenu persistant
 	getSettings: (key) => ipcRenderer.invoke("settings:get", key),
 	setSettings: (settings) => ipcRenderer.invoke("settings:set", settings),
 
@@ -48,17 +62,6 @@ contextBridge.exposeInMainWorld("electron", {
 	off: (channel) => {
 		delete listeners[channel];
 	},
-
-	// Méthodes spécifiques pour le watcher
-	onFileChanged: (callback) => {
-		listeners["fs:fileChanged"] = callback;
-	},
-	removeFileChangedListener: () => {
-		delete listeners["fs:fileChanged"];
-	},
-
-	// Outils de débogage
-	openDevTools: () => ipcRenderer.invoke("debug:openDevTools"),
 
 	// Pour exécuter des commandes dans le terminal (utilisé dans le testeur du watcher)
 	runCommand: (command, options = {}) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
 	FileIcon,
 	FolderIcon,
@@ -14,18 +14,48 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import type { RecentProject } from "@/lib/types";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "../ui/tooltip";
 
 interface WelcomePageProps {
+	recentProjects: RecentProject[];
 	onOpenFile: () => void;
 	onDirectoryOpen: () => void;
-	recentProjects?: Array<{ name: string; path: string; lastOpened: Date }>;
 	onSpecificDirectoryOpen: (dir: string) => void;
 }
 
+function useRelativeTime(date: Date): string {
+	const [relativeTime, setRelativeTime] = useState<string>("");
+
+	useEffect(() => {
+		function updateRelativeTime() {
+			setRelativeTime(formatDate(date));
+		}
+
+		updateRelativeTime();
+
+		const interval = setInterval(updateRelativeTime, 1000);
+
+		return () => clearInterval(interval);
+	}, [date]);
+
+	return relativeTime;
+}
+
+const RelativeTime: React.FC<{ date: Date }> = ({ date }) => {
+	const relativeTime = useRelativeTime(date);
+	return <>{relativeTime}</>;
+};
+
 const WelcomePage: React.FC<WelcomePageProps> = ({
+	recentProjects,
 	onOpenFile,
 	onDirectoryOpen,
-	recentProjects = [],
 	onSpecificDirectoryOpen,
 }) => {
 	return (
@@ -137,34 +167,50 @@ const WelcomePage: React.FC<WelcomePageProps> = ({
 								</h2>
 								<div className="bg-muted/50 rounded-md overflow-hidden">
 									{recentProjects.map((project, index) => (
-										<button
-											key={project.path}
-											className={cn(
-												"w-full flex items-center px-4 py-2.5 text-left hover:bg-muted transition-colors",
-												index !==
-													recentProjects.length - 1
-													? "border-b border-border/40"
-													: ""
-											)}
-											onClick={() =>
-												onSpecificDirectoryOpen(
-													project.path
-												)
-											}
-										>
-											<FolderIcon className="h-5 w-5 mr-3 text-muted-foreground" />
-											<div className="flex-1 min-w-0">
-												<p className="font-medium truncate">
-													{project.name}
-												</p>
-												<p className="text-xs text-muted-foreground truncate">
-													{project.path}
-												</p>
-											</div>
-											<p className="text-xs text-muted-foreground ml-4 whitespace-nowrap">
-												{formatDate(project.lastOpened)}
-											</p>
-										</button>
+										<TooltipProvider key={project.path}>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<button
+														className={cn(
+															"w-full flex items-center px-4 py-2.5 text-left hover:bg-muted transition-colors",
+															index !==
+																recentProjects.length -
+																	1
+																? "border-b border-border/40"
+																: ""
+														)}
+														onClick={() =>
+															onSpecificDirectoryOpen(
+																project.path
+															)
+														}
+													>
+														<FolderIcon className="h-5 w-5 mr-3 text-muted-foreground" />
+														<div className="flex-1 min-w-0">
+															<p className="font-medium truncate">
+																{project.name}
+															</p>
+														</div>
+														<p className="text-xs text-muted-foreground ml-4 whitespace-nowrap">
+															{project.path
+																.split(/[/\\]/)
+																.slice(0, -1)
+																.join("/")}
+														</p>
+													</button>
+												</TooltipTrigger>
+												<TooltipContent side="bottom">
+													Dernière ouverture:{" "}
+													<RelativeTime
+														date={
+															new Date(
+																project.lastOpened
+															)
+														}
+													/>
+												</TooltipContent>
+											</Tooltip>
+										</TooltipProvider>
 									))}
 								</div>
 							</div>
@@ -323,19 +369,33 @@ const WelcomePage: React.FC<WelcomePageProps> = ({
 function formatDate(date: Date): string {
 	const now = new Date();
 	const diffTime = Math.abs(now.getTime() - date.getTime());
-	const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+	const diffSeconds = Math.floor(diffTime / 1000);
 
-	if (diffDays === 0) {
-		return "aujourd'hui";
-	} else if (diffDays === 1) {
-		return "hier";
-	} else if (diffDays < 7) {
-		return `il y a ${diffDays} jours`;
-	} else if (diffDays < 30) {
-		const weeks = Math.floor(diffDays / 7);
-		return `il y a ${weeks} ${weeks === 1 ? "semaine" : "semaines"}`;
+	if (diffSeconds < 60) {
+		return `il y a ${diffSeconds} ${
+			diffSeconds <= 1 ? "seconde" : "secondes"
+		}`;
+	} else if (diffSeconds < 3600) {
+		const minutes = Math.floor(diffSeconds / 60);
+		return `il y a ${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+	} else if (diffSeconds < 86400) {
+		const hours = Math.floor(diffSeconds / 3600);
+		return `il y a ${hours} ${hours === 1 ? "heure" : "heures"}`;
 	} else {
-		return date.toLocaleDateString();
+		const diffDays = Math.floor(diffSeconds / 86400);
+
+		if (diffDays === 0) {
+			return "aujourd'hui";
+		} else if (diffDays === 1) {
+			return "hier";
+		} else if (diffDays < 7) {
+			return `il y a ${diffDays} jours`;
+		} else if (diffDays < 30) {
+			const weeks = Math.floor(diffDays / 7);
+			return `il y a ${weeks} ${weeks === 1 ? "semaine" : "semaines"}`;
+		} else {
+			return date.toLocaleDateString();
+		}
 	}
 }
 

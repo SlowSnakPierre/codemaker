@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { FileTab } from "@/lib/types";
+import type { FileTab, RecentProject } from "@/lib/types";
 import CodeEditor from "@/components/editor/code-editor";
 import { toast } from "sonner";
 import { XIcon, CircleIcon } from "lucide-react";
@@ -12,6 +12,7 @@ import WelcomePage from "@/components/editor/welcome-page";
 interface EditorPanelProps {
 	tabs: FileTab[];
 	activeTabId: string | null;
+	recentProjects: RecentProject[];
 	onTabClick: (tabId: string) => void;
 	onTabClose: (tabId: string) => void;
 	onContentChange: (tabId: string, content: string) => void;
@@ -27,6 +28,7 @@ interface EditorPanelProps {
 export default function EditorPanel({
 	tabs,
 	activeTabId,
+	recentProjects,
 	onTabClick,
 	onTabClose,
 	onContentChange,
@@ -153,30 +155,7 @@ export default function EditorPanel({
 				<WelcomePage
 					onOpenFile={onOpenFile}
 					onDirectoryOpen={onDirectoryOpen}
-					recentProjects={[
-						// Ces données seront remplacées par les vraies données de projets récents
-						{
-							name: "Mon Projet",
-							path: "C:/Users/Utilisateur/projets/mon-projet",
-							lastOpened: new Date(
-								Date.now() - 24 * 60 * 60 * 1000
-							),
-						},
-						{
-							name: "Application Web",
-							path: "C:/Users/Utilisateur/projets/app-web",
-							lastOpened: new Date(
-								Date.now() - 3 * 24 * 60 * 60 * 1000
-							),
-						},
-						{
-							name: "API Backend",
-							path: "C:/Users/Utilisateur/projets/api-backend",
-							lastOpened: new Date(
-								Date.now() - 7 * 24 * 60 * 60 * 1000
-							),
-						},
-					]}
+					recentProjects={recentProjects}
 					onSpecificDirectoryOpen={onSpecificDirectoryOpen}
 				/>
 			)}

@@ -261,6 +261,10 @@ ipcMain.handle("fs:readDirectory", async (event, dirPath) => {
 	});
 });
 
+ipcMain.handle("fs:directoryExists", async (event, dirPath) => {
+	return fs.existsSync(dirPath);
+});
+
 ipcMain.handle("fs:readFile", async (event, filePath) => {
 	return fs.readFileSync(filePath, "utf8");
 });
@@ -370,12 +374,6 @@ ipcMain.handle("window:close", () => {
 ipcMain.handle("settings:get", (event, key) => store.get(key));
 ipcMain.handle("settings:set", (event, { key, value }) => {
 	store.set(key, value);
-	return true;
-});
-
-// Ajouter un gestionnaire pour ouvrir manuellement les outils de développement
-ipcMain.handle("debug:openDevTools", () => {
-	openDevTools();
 	return true;
 });
 

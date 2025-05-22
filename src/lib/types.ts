@@ -39,24 +39,30 @@ export interface RefreshDirectoryResult {
 
 export interface ElectronAPI {
 	openDirectory: () => Promise<string | null>;
+	readDirectory: (dirPath: string) => Promise<ReadDirectory[] | null>;
+	createDirectory: (params: {
+		dirPath: string;
+		folderName: string;
+	}) => Promise<CreateDirectoryResult>;
+	refreshDirectory: (dirPath: string) => Promise<RefreshDirectoryResult>;
+	directoryExists: (dirPath: string) => Promise<boolean>;
+
 	openFile: () => Promise<ReadFile | null>;
 	saveFile: (params: ReadFile) => Promise<string | null>;
-
-	readDirectory: (dirPath: string) => Promise<ReadDirectory[] | null>;
 	readFile: (filePath: string) => Promise<string | null>;
 	writeFile: (params: ReadFile) => Promise<boolean>;
 	createFile: (params: {
 		dirPath: string;
 		fileName: string;
 	}) => Promise<CreateFileResult>;
-	createDirectory: (params: {
-		dirPath: string;
-		folderName: string;
-	}) => Promise<CreateDirectoryResult>;
 	getFileType: (filePath: string) => Promise<FileTypeResult>;
-	refreshDirectory: (dirPath: string) => Promise<RefreshDirectoryResult>;
+
 	restartWatcher: (dirPath: string) => Promise<boolean>;
 	checkWatcherStatus: () => Promise<boolean>;
+	onFileChanged: (callback: (event: FileChangeEvent) => void) => void;
+	removeFileChangedListener: (
+		callback: (event: FileChangeEvent) => void
+	) => void;
 
 	minimizeWindow: () => Promise<void>;
 	maximizeWindow: () => Promise<boolean>;
@@ -70,11 +76,6 @@ export interface ElectronAPI {
 
 	on: (channel: string, callback: (data: any) => void) => void;
 	off: (channel: string) => void;
-
-	onFileChanged: (callback: (event: FileChangeEvent) => void) => void;
-	removeFileChangedListener: (
-		callback: (event: FileChangeEvent) => void
-	) => void;
 
 	runCommand: (
 		command: string,
@@ -121,4 +122,10 @@ export interface WatcherInfoState {
 	status: string;
 	lastWatcherDirectory?: string;
 	lastWatcherTimestamp?: string;
+}
+
+export interface RecentProject {
+	name: string;
+	path: string;
+	lastOpened: string;
 }
