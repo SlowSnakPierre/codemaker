@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Editor, { type Monaco, type OnMount } from "@monaco-editor/react";
+import Editor, { type OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { useTheme } from "next-themes";
 
@@ -53,7 +53,7 @@ export default function CodeEditor({
 		}
 	}, [onChange, onRedo]);
 
-	const handleEditorDidMount: OnMount = (editor, monaco) => {
+	const handleEditorDidMount: OnMount = (editor, _monaco) => {
 		editorRef.current = editor;
 		setIsEditorReady(true);
 		contentRef.current = content;
@@ -61,29 +61,6 @@ export default function CodeEditor({
 		if (typeof window !== "undefined") {
 			window.__MONACO_EDITOR_INSTANCE__ = editor;
 		}
-
-		editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-			onSave();
-		});
-
-		editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyZ, () => {
-			editor.trigger("keyboard", "undo", null);
-
-			const value = editor.getValue();
-			contentRef.current = value;
-			onChange(value);
-		});
-
-		editor.addCommand(
-			monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyZ,
-			() => {
-				editor.trigger("keyboard", "redo", null);
-
-				const value = editor.getValue();
-				contentRef.current = value;
-				onChange(value);
-			}
-		);
 
 		editor.onDidChangeCursorPosition((e) => {
 			onCursorPositionChange(e.position.lineNumber, e.position.column);
@@ -96,17 +73,6 @@ export default function CodeEditor({
 		});
 
 		editor.focus();
-	};
-
-	const handleEditorWillMount = (monaco: Monaco) => {
-		monaco.editor.defineTheme("customDark", {
-			base: "vs-dark",
-			inherit: true,
-			rules: [],
-			colors: {
-				"editor.background": "#1a1a1a",
-			},
-		});
 	};
 
 	useEffect(() => {
@@ -140,17 +106,12 @@ export default function CodeEditor({
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.key === "s") {
-				e.preventDefault();
-				onSave();
-			}
-
-			if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === "z") {
+			if ((e.metaKey || e.ctrlKey) && e.key === "z") {
 				e.preventDefault();
 				handleUndo();
 			}
 
-			if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "z") {
+			if ((e.metaKey || e.ctrlKey) && e.key === "y") {
 				e.preventDefault();
 				handleRedo();
 			}
@@ -178,7 +139,6 @@ export default function CodeEditor({
 			language={language}
 			value={content}
 			theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
-			beforeMount={handleEditorWillMount}
 			onMount={handleEditorDidMount}
 			options={{
 				automaticLayout: true,
@@ -189,9 +149,8 @@ export default function CodeEditor({
 				renderLineHighlight: "all",
 				rulers: [],
 				lightbulb: {
-					// @ts-expect-error No type definition for this property
-					enabled: true,
-				},
+					enabled: "on",
+				} as editor.IEditorLightbulbOptions,
 				suggestOnTriggerCharacters: true,
 				quickSuggestions: true,
 				scrollbar: {
@@ -225,8 +184,6 @@ export default function CodeEditor({
 					autoFindInSelection: "never",
 					seedSearchStringFromSelection: "always",
 				},
-
-				undoLimit: 100,
 			}}
 		/>
 	);

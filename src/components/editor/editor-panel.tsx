@@ -93,7 +93,13 @@ export default function EditorPanel({
 										<span className="max-w-[140px] truncate flex-1 flex items-center">
 											{tab.name}
 											{tab.modified && (
-												<CircleIcon className="h-2 w-2 ml-1 inline-flex fill-current text-orange-500" />
+												<CircleIcon
+													className={`h-2 w-2 ml-1 inline-flex fill-current ${
+														tab.externallyModified
+															? "text-red-500"
+															: "text-orange-500"
+													}`}
+												/>
 											)}
 										</span>
 										<button

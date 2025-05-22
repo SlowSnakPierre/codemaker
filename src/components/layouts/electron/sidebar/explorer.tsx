@@ -116,10 +116,6 @@ const Explorer = ({
 			let hasUpdates = false;
 			const updatedFiles = [...fileList];
 
-			console.log(
-				`Chargement optimisé de ${foldersToProcess.length} dossiers développés`
-			);
-
 			const findAndUpdateItem = async (
 				items: FileData[],
 				targetPath: string

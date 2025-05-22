@@ -151,26 +151,14 @@ export default function Sidebar({
 	);
 	const toggleFolder = useCallback((path: string) => {
 		const normalizedPath = path.replace(/\\/g, "/");
-		console.log(`Basculement manuel du dossier: ${normalizedPath}`);
 
 		setExpandedFolders((prev) => {
 			const newValue = !prev[normalizedPath];
-			console.log(
-				`Dossier ${normalizedPath} est maintenant ${
-					newValue ? "DÉVELOPPÉ" : "FERMÉ"
-				}`
-			);
 
 			const newState = { ...prev };
 			newState[normalizedPath] = newValue;
 
 			if (newValue) {
-				console.log(
-					`Dossiers développés après ajout: ${Object.keys(newState)
-						.filter((k) => newState[k])
-						.join(", ")}`
-				);
-
 				setManuallyClosedFolders((prev) =>
 					prev.filter((folder) => folder !== normalizedPath)
 				);
@@ -182,8 +170,6 @@ export default function Sidebar({
 		});
 	}, []);
 	const closeAllFolders = useCallback(() => {
-		console.log("Fermeture de tous les dossiers");
-
 		const openedFolders = Object.keys(expandedFolders).filter(
 			(folder) => expandedFolders[folder]
 		);
@@ -210,11 +196,6 @@ export default function Sidebar({
 			}
 		}
 
-		console.log(
-			"Dossiers potentiellement requis:",
-			potentialRequiredFolders
-		);
-
 		setExpandedFolders({});
 
 		setManuallyClosedFolders((prev) => {
@@ -232,10 +213,6 @@ export default function Sidebar({
 				}
 			});
 
-			console.log(
-				"Nouvelle liste de dossiers fermés manuellement:",
-				newClosedFolders
-			);
 			return newClosedFolders;
 		});
 
@@ -251,28 +228,16 @@ export default function Sidebar({
 
 		toast.success("Dossier fermé");
 	}, [onDirectoryClose]);
+
 	const expandToFile = useCallback(
 		async (filePath: string) => {
 			if (!filePath || !currentDirectory || !isElectron) {
-				console.log(
-					"Impossible d'étendre vers le fichier: paramètres invalides",
-					{
-						filePath,
-						currentDirectory,
-						isElectron,
-					}
-				);
 				return;
 			}
 
 			if (!filePath.startsWith(currentDirectory)) {
-				console.log(
-					`Le chemin ${filePath} ne commence pas par ${currentDirectory}`
-				);
 				return;
 			}
-
-			console.log(`Développement des dossiers pour: ${filePath}`);
 
 			const normalizedPath = filePath.replace(/\\/g, "/");
 			const normalizedCurrentDir = currentDirectory.replace(/\\/g, "/");
@@ -285,7 +250,6 @@ export default function Sidebar({
 			}
 
 			const pathSegments = relativePath.split("/");
-			console.log("Segments du chemin:", pathSegments);
 
 			const pathsToProcess = [];
 			let currentPathBuild = normalizedCurrentDir;
@@ -303,13 +267,7 @@ export default function Sidebar({
 				return !expandedPaths.includes(path);
 			});
 
-			console.log("Chemins à charger:", pathsToLoad);
-
 			if (pathsToLoad.length > 0) {
-				console.log(
-					`Chargement de ${pathsToLoad.length} dossiers en parallèle`
-				);
-
 				await Promise.all(
 					pathsToLoad.map(async (path) => {
 						try {
@@ -328,8 +286,6 @@ export default function Sidebar({
 				);
 
 				await new Promise((resolve) => setTimeout(resolve, 100));
-			} else {
-				console.log("Tous les dossiers nécessaires sont déjà chargés");
 			}
 
 			const foldersToExpand: Record<string, boolean> = {};
@@ -369,10 +325,13 @@ export default function Sidebar({
 				.join("/");
 
 			console.log(`Fichier modifié: ${event.type} - ${event.path}`);
-
 			if (event.type === "addDir" || event.type === "unlinkDir") {
 				await refreshFolder(dirPath, false);
-			} else if (event.type === "add" || event.type === "unlink") {
+			} else if (
+				event.type === "add" ||
+				event.type === "unlink" ||
+				event.type === "change"
+			) {
 				await refreshFolder(dirPath, false);
 			}
 		};
@@ -419,15 +378,6 @@ export default function Sidebar({
 		}
 	}, [currentDirectory, isElectron]);
 	useEffect(() => {
-		const expandedPaths = Object.keys(expandedFolders).filter(
-			(path) => expandedFolders[path]
-		);
-
-		console.log(
-			`État des dossiers (${expandedPaths.length} dossiers développés):`,
-			expandedPaths
-		);
-
 		if (activeTab?.path && currentDirectory) {
 			const normalizedPath = activeTab.path.replace(/\\/g, "/");
 			const normalizedCurrentDir = currentDirectory.replace(/\\/g, "/");
@@ -449,18 +399,6 @@ export default function Sidebar({
 				currentPathBuild = `${currentPathBuild}/${segment}`;
 				requiredFolders.push(currentPathBuild);
 			}
-
-			const isPathExpanded =
-				requiredFolders.length === 0 ||
-				requiredFolders.every((folder) =>
-					expandedPaths.includes(folder)
-				);
-
-			if (isPathExpanded) {
-				console.log(
-					`Chemin vers le fichier actif '${activeTab.path}' est correctement développé.`
-				);
-			}
 		}
 	}, [expandedFolders, activeTab?.path, currentDirectory]);
 
@@ -474,12 +412,6 @@ export default function Sidebar({
 					lastActiveTabPathRef.current !== activeTab.path;
 
 				lastActiveTabPathRef.current = activeTab.path;
-
-				console.log(
-					"Tentative de développement vers:",
-					activeTab.path,
-					isTabChanged ? "(nouvel onglet)" : "(même onglet)"
-				);
 
 				if (isTabChanged) {
 					setManuallyClosedFolders([]);
@@ -517,7 +449,6 @@ export default function Sidebar({
 				);
 
 				if (requiredFolders.length === 0) {
-					console.log("Pas de dossiers parents à développer");
 					return;
 				}
 
@@ -533,22 +464,10 @@ export default function Sidebar({
 				});
 
 				if (foldersToExpand.length === 0) {
-					console.log(
-						"Tous les dossiers nécessaires sont déjà développés ou fermés manuellement"
-					);
 					return;
 				}
 
-				console.log("Dossiers à développer:", foldersToExpand);
-
 				try {
-					const expandedFoldersCount = Object.keys(
-						expandedFolders
-					).filter((key) => expandedFolders[key]).length;
-					console.log(
-						`État avant expansion: ${expandedFoldersCount} dossiers développés`
-					);
-
 					const foldersToExpandObj: Record<string, boolean> = {};
 					foldersToExpand.forEach((folder) => {
 						foldersToExpandObj[folder] = true;
@@ -558,8 +477,6 @@ export default function Sidebar({
 						...prev,
 						...foldersToExpandObj,
 					}));
-
-					console.log("Expansion des dossiers terminée avec succès");
 				} catch (error) {
 					console.error(
 						"Erreur lors de l'expansion des dossiers:",

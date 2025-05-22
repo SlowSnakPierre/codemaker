@@ -9,7 +9,7 @@ declare global {
 }
 
 export interface FileChangeEvent {
-	type: "add" | "unlink" | "addDir" | "unlinkDir";
+	type: "add" | "change" | "unlink" | "addDir" | "unlinkDir";
 	path: string;
 }
 
@@ -55,6 +55,8 @@ export interface ElectronAPI {
 	}) => Promise<CreateDirectoryResult>;
 	getFileType: (filePath: string) => Promise<FileTypeResult>;
 	refreshDirectory: (dirPath: string) => Promise<RefreshDirectoryResult>;
+	restartWatcher: (dirPath: string) => Promise<boolean>;
+	checkWatcherStatus: () => Promise<boolean>;
 
 	minimizeWindow: () => Promise<void>;
 	maximizeWindow: () => Promise<boolean>;
@@ -98,4 +100,5 @@ export interface FileTab {
 	languageOverride?: string | null;
 	active?: boolean;
 	modified?: boolean;
+	externallyModified?: boolean;
 }

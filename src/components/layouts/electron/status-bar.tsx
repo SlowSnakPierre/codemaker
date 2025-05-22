@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import WatcherStatus from "./status/watcher-status";
 
 type Props = {
 	activeFile: string | null;
@@ -24,6 +25,7 @@ type Props = {
 	tabSize: number;
 	useTabs: boolean;
 	onLanguageChange: (language: string) => void;
+	currentDirectory?: string | null;
 };
 
 const availableLanguages = [
@@ -116,6 +118,7 @@ const StatusBar = ({
 	tabSize = 2,
 	useTabs = false,
 	onLanguageChange,
+	currentDirectory = null,
 }: Props) => {
 	const { theme } = useTheme();
 	const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
@@ -152,7 +155,7 @@ const StatusBar = ({
 				</span>
 				<span className="h-3 w-[1px] bg-border"></span>
 				<span>{indentationDisplay}</span>
-				<span className="h-3 w-[1px] bg-border"></span>
+				<span className="h-3 w-[1px] bg-border"></span>{" "}
 				<span>UTF-8</span>
 				<span className="h-3 w-[1px] bg-border"></span>
 				<span>
@@ -160,6 +163,12 @@ const StatusBar = ({
 						? theme.charAt(0).toUpperCase() + theme.slice(1)
 						: "Unknown"}
 				</span>
+				{currentDirectory && (
+					<>
+						<span className="h-3 w-[1px] bg-border"></span>
+						<WatcherStatus currentDirectory={currentDirectory} />
+					</>
+				)}
 			</div>
 
 			<div className=" flex items-center space-x-4">

@@ -30,6 +30,9 @@ contextBridge.exposeInMainWorld("electron", {
 	getFileType: (filePath) => ipcRenderer.invoke("fs:getFileType", filePath),
 	refreshDirectory: (dirPath) =>
 		ipcRenderer.invoke("fs:refreshDirectory", dirPath),
+	restartWatcher: (dirPath) =>
+		ipcRenderer.invoke("fs:restartWatcher", dirPath),
+	checkWatcherStatus: () => ipcRenderer.invoke("fs:checkWatcherStatus"),
 
 	minimizeWindow: () => ipcRenderer.invoke("window:minimize"),
 	maximizeWindow: () => ipcRenderer.invoke("window:maximize"),
@@ -45,4 +48,19 @@ contextBridge.exposeInMainWorld("electron", {
 	off: (channel) => {
 		delete listeners[channel];
 	},
+
+	// Méthodes spécifiques pour le watcher
+	onFileChanged: (callback) => {
+		listeners["fs:fileChanged"] = callback;
+	},
+	removeFileChangedListener: () => {
+		delete listeners["fs:fileChanged"];
+	},
+
+	// Outils de débogage
+	openDevTools: () => ipcRenderer.invoke("debug:openDevTools"),
+
+	// Pour exécuter des commandes dans le terminal (utilisé dans le testeur du watcher)
+	runCommand: (command, options = {}) =>
+		ipcRenderer.invoke("shell:runCommand", command, options),
 });

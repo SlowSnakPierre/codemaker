@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import TitleBar from "./title-bar";
-import type { FileData, FileTab } from "@/lib/types";
+import type { FileData, FileTab, FileChangeEvent } from "@/lib/types";
 import EditorPanel from "@/components/editor/editor-panel";
 import {
 	ResizableHandle,
@@ -21,6 +21,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getLanguageFromFilename } from "@/lib/editor-utils";
+import {
+	startWatcherHealthCheck,
+	stopWatcherHealthCheck,
+} from "@/lib/watcher-utils";
 
 const ElectronLayout = () => {
 	const [isClient, setIsClient] = useState(false);
@@ -38,7 +42,6 @@ const ElectronLayout = () => {
 	const [tabToClose, setTabToClose] = useState<string | null>(null);
 
 	const isElectron = typeof window !== "undefined" && window.electron;
-
 	useEffect(() => {
 		setIsClient(false);
 
@@ -47,7 +50,21 @@ const ElectronLayout = () => {
 			window.electron
 				.getSettings("lastOpenDirectory")
 				.then((dir: string) => {
-					if (dir) setCurrentDirectory(dir);
+					if (dir) {
+						setCurrentDirectory(dir);
+						// Redémarrer explicitement le watcher pour être sûr
+						window.electron
+							.restartWatcher(dir)
+							.then(() =>
+								console.log("Watcher redémarré pour:", dir)
+							)
+							.catch((err) =>
+								console.error(
+									"Échec du redémarrage du watcher:",
+									err
+								)
+							);
+					}
 				});
 
 			window.electron.getSettings("tabs").then((savedTabs: FileTab[]) => {
@@ -63,21 +80,164 @@ const ElectronLayout = () => {
 			});
 		}
 	}, [isElectron]);
-
 	useEffect(() => {
 		if (isElectron && tabs.length > 0) {
 			window.electron.setSettings({ key: "tabs", value: tabs });
 		}
 	}, [tabs, isElectron]);
 
+	// Démarrer/arrêter la vérification de santé du watcher quand le répertoire change
 	useEffect(() => {
 		if (isElectron && currentDirectory) {
-			window.electron.setSettings({
-				key: "lastOpenDirectory",
-				value: currentDirectory,
-			});
+			// Démarrer une vérification périodique du watcher toutes les minutes
+			startWatcherHealthCheck(currentDirectory, 60000);
+		} else {
+			stopWatcherHealthCheck();
 		}
-	}, [currentDirectory, isElectron]);
+
+		// Nettoyage lors du démontage du composant
+		return () => {
+			stopWatcherHealthCheck();
+		};
+	}, [isElectron, currentDirectory]);
+	useEffect(() => {
+		if (!isElectron || !currentDirectory) return;
+
+		window.electron.setSettings({
+			key: "lastOpenDirectory",
+			value: currentDirectory,
+		});
+
+		// S'assurer que le watcher est démarré pour ce répertoire
+		window.electron
+			.restartWatcher(currentDirectory)
+			.catch((err) =>
+				console.error("Erreur lors du redémarrage du watcher:", err)
+			);
+
+		const handleFileChange = (data: FileChangeEvent) => {
+			const fileName = data.path.split(/[/\\]/).pop() || "";
+			if (data.type === "add" || data.type === "change") {
+				const tabToUpdate = tabs.find((t) => t.path === data.path);
+				if (tabToUpdate) {
+					// Marquer le fichier comme modifié en externe
+					setTabs((prevTabs) =>
+						prevTabs.map((t) =>
+							t.id === tabToUpdate.id
+								? {
+										...t,
+										externallyModified: true,
+								  }
+								: t
+						)
+					);
+
+					toast.info(
+						`Le fichier ${fileName} a été modifié en dehors de l'éditeur.`,
+						{
+							action: {
+								label: "Recharger",
+								onClick: () => {
+									(async () => {
+										try {
+											const content =
+												await window.electron.readFile(
+													data.path
+												);
+											if (content !== null) {
+												setTabs((prevTabs) =>
+													prevTabs.map((t) =>
+														t.id === tabToUpdate.id
+															? {
+																	...t,
+																	content,
+																	originalContent:
+																		content,
+																	modified:
+																		false,
+																	externallyModified:
+																		false,
+															  }
+															: t
+													)
+												);
+												toast.success(
+													`Fichier ${fileName} rechargé`
+												);
+											}
+										} catch (error) {
+											toast.error(
+												`Impossible de recharger le fichier ${fileName}`
+											);
+											console.error(error);
+										}
+									})();
+								},
+							},
+						}
+					);
+				}
+			}
+
+			if (data.type === "unlink") {
+				const tabToUpdate = tabs.find((t) => t.path === data.path);
+				if (tabToUpdate) {
+					toast.warning(`Le fichier ${fileName} a été supprimé.`, {
+						action: {
+							label: "Fermer l'onglet",
+							onClick: () => {
+								const isActiveTab = tabs.find(
+									(tab) => tab.id === tabToUpdate.id
+								)?.active;
+
+								setTabs((prevTabs) => {
+									const filtered = prevTabs.filter(
+										(tab) => tab.id !== tabToUpdate.id
+									);
+
+									if (isActiveTab && filtered.length > 0) {
+										const newActiveIndex = Math.min(
+											prevTabs.findIndex(
+												(tab) =>
+													tab.id === tabToUpdate.id
+											),
+											filtered.length - 1
+										);
+										filtered[newActiveIndex].active = true;
+										setActiveTab(
+											filtered[newActiveIndex].id
+										);
+									} else if (filtered.length === 0) {
+										setActiveTab(null);
+									}
+
+									return filtered;
+								});
+							},
+						},
+					});
+
+					setTabs((prevTabs) =>
+						prevTabs.map((t) =>
+							t.id === tabToUpdate.id
+								? {
+										...t,
+										modified: true,
+										externallyModified: true,
+								  }
+								: t
+						)
+					);
+				}
+			}
+		};
+
+		window.electron.on("fs:fileChanged", handleFileChange);
+
+		return () => {
+			window.electron.off("fs:fileChanged");
+		};
+	}, [currentDirectory, isElectron, tabs]);
 
 	const toggleSidebar = () => {
 		setSidebarCollapsed((prev) => !prev);
@@ -146,12 +306,53 @@ const ElectronLayout = () => {
 			});
 		}
 	};
-
 	const handleFileSave = async (tabId: string) => {
 		if (!isElectron) return;
 
 		const tab = tabs.find((t) => t.id === tabId);
 		if (!tab) return;
+
+		if (tab.externallyModified && tab.path) {
+			const confirmSave = window.confirm(
+				`Le fichier "${tab.name}" a été modifié en dehors de l'éditeur. Voulez-vous vraiment l'écraser ?`
+			);
+
+			if (!confirmSave) {
+				const confirmReload = window.confirm(
+					"Voulez-vous recharger le fichier depuis le disque ?"
+				);
+
+				if (confirmReload) {
+					try {
+						const content = await window.electron.readFile(
+							tab.path
+						);
+						if (content !== null) {
+							setTabs((prevTabs) =>
+								prevTabs.map((t) =>
+									t.id === tabId
+										? {
+												...t,
+												content,
+												originalContent: content,
+												modified: false,
+												externallyModified: false,
+										  }
+										: t
+								)
+							);
+							toast.success(`Fichier ${tab.name} rechargé`);
+						}
+					} catch (error) {
+						toast.error(
+							`Impossible de recharger le fichier ${tab.name}`
+						);
+						console.error(error);
+					}
+				}
+				return;
+			}
+		}
 
 		try {
 			const savedPath = await window.electron.saveFile({
@@ -169,15 +370,16 @@ const ElectronLayout = () => {
 									path: savedPath,
 									name: fileName || "Untitled",
 									modified: false,
+									externallyModified: false,
 									originalContent: t.content,
 							  }
 							: t
 					)
 				);
-				toast.success(`Saved ${fileName}`);
+				toast.success(`Sauvegardé: ${fileName}`);
 			}
 		} catch (error) {
-			toast.error("Failed to save file");
+			toast.error("Échec de la sauvegarde du fichier");
 			console.error(error);
 		}
 	};
@@ -254,7 +456,7 @@ const ElectronLayout = () => {
 		window.electron
 			.readFile(fileData.path)
 			.then((content: string | null) => {
-				if (!content) throw new Error("Failed to read file");
+				if (content === null) throw new Error("Failed to read file");
 				const detectedLanguage = getLanguageFromFilename(fileData.name);
 
 				const newTab: FileTab = {
@@ -444,6 +646,7 @@ const ElectronLayout = () => {
 				tabSize={2}
 				useTabs={false}
 				onLanguageChange={handleLanguageChange}
+				currentDirectory={currentDirectory}
 			/>{" "}
 			{/* Boîte de dialogue de confirmation pour la fermeture d'onglet */}
 			<Dialog
