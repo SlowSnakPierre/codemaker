@@ -1,4 +1,4 @@
-import { getFileIcon, getFileIconColor } from "@/lib/file-icons";
+import { getFileIcon, getFileIconColor } from "@/utils/file-icons";
 import {
 	ImageIcon,
 	FileTextIcon,

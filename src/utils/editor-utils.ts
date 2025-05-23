@@ -1,5 +1,15 @@
-import type { FileTab } from "@/core/types";
+import type { editor } from "monaco-editor";
+import { type FileTab } from "@types";
 
+/**
+ * Utilitaires pour l'éditeur de code
+ */
+
+/**
+ * Détermine le langage à utiliser dans l'éditeur en fonction du nom de fichier
+ * @param filename Nom du fichier
+ * @returns Identifiant du langage pour Monaco Editor
+ */
 export function getLanguageFromFilename(filename: string): string {
 	const extension = filename.split(".").pop()?.toLowerCase() || "";
 
@@ -72,6 +82,16 @@ export function getLanguageFromFilename(filename: string): string {
 	return languageMap[extension] || "plaintext";
 }
 
+/**
+ * Crée un nouvel onglet de fichier
+ * @param id Identifiant unique
+ * @param name Nom du fichier
+ * @param path Chemin du fichier
+ * @param content Contenu du fichier
+ * @param language Langage utilisé
+ * @param languageOverride Surcharge manuelle du langage (optionnel)
+ * @returns Objet FileTab
+ */
 export function createTab(
 	id: string,
 	name: string,
@@ -93,61 +113,58 @@ export function createTab(
 	};
 }
 
+/**
+ * Génère un identifiant unique pour un nouvel onglet
+ * @returns Identifiant unique
+ */
 export function generateTabId(): string {
 	return `tab-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
 
+/**
+ * Vérifie si des onglets ont des modifications non sauvegardées
+ * @param tabs Liste des onglets
+ * @returns true si au moins un onglet a des modifications non sauvegardées
+ */
 export function hasUnsavedChanges(tabs: FileTab[]): boolean {
 	return tabs.some((tab) => tab.modified);
 }
 
-export function getFilenameFromPath(path: string): string {
-	return path.split("/").pop() || path;
+/**
+ * Formate le code selon le langage spécifié
+ * @param editor Instance de l'éditeur Monaco
+ * @param language Langage du code
+ */
+export function formatCode(editor: editor.IStandaloneCodeEditor): void {
+	editor.getAction("editor.action.formatDocument")?.run();
 }
 
-export function updateTabContent(
-	tabs: FileTab[],
-	tabId: string,
-	newContent: string,
-	isExternalUpdate = false,
-): FileTab[] {
-	return tabs.map((tab) => {
-		if (tab.id === tabId) {
-			if (isExternalUpdate) {
-				return {
-					...tab,
-					content: newContent,
-					originalContent: newContent,
-					modified: false,
-				};
-			}
-
-			const isOriginalContent = tab.originalContent === newContent;
-			return {
-				...tab,
-				content: newContent,
-				modified: !isOriginalContent,
-			};
-		}
-		return tab;
-	});
-}
-
-export function syncFileContent(
-	tabs: FileTab[],
-	path: string,
-	newContent: string,
-): FileTab[] {
-	return tabs.map((tab) => {
-		if (tab.path === path) {
-			if (!tab.modified) {
-				return {
-					...tab,
-					content: newContent,
-					originalContent: newContent,
-				};
-			}
-		}
-		return tab;
-	});
+/**
+ * Configure les options de base pour Monaco Editor
+ * @param fontSize Taille de la police
+ * @param tabSize Taille des tabulations
+ * @param wordWrap Activation du retour à la ligne automatique
+ * @returns Options de configuration
+ */
+export function getDefaultEditorOptions(
+	fontSize: number = 14,
+	tabSize: number = 2,
+	wordWrap: boolean = true,
+): editor.IStandaloneEditorConstructionOptions {
+	return {
+		fontSize,
+		tabSize,
+		wordWrap: wordWrap ? "on" : "off",
+		automaticLayout: true,
+		minimap: {
+			enabled: true,
+		},
+		scrollBeyondLastLine: false,
+		lineNumbers: "on",
+		renderLineHighlight: "all",
+		renderWhitespace: "none",
+		bracketPairColorization: {
+			enabled: true,
+		},
+	};
 }

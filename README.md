@@ -158,12 +158,12 @@ Le script automatise le processus complet :
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! Consultez notre [Guide de Contribution](./CONTRIBUTING.md) pour plus de détails sur le processus de développement et les bonnes pratiques.
+Les contributions sont les bienvenues ! Consultez notre [Guide de Contribution](./docs/CONTRIBUTING.md) pour plus de détails sur le processus de développement et les bonnes pratiques.
 
 ## 📄 Documentation supplémentaire
 
-- [Guide de Contribution](./CONTRIBUTING.md) - Comment contribuer au projet
-- [Guide de Release](./RELEASING.md) - Processus détaillé de publication des versions
+- [Guide de Contribution](./docs/CONTRIBUTING.md) - Comment contribuer au projet
+- [Guide de Release](./docs/RELEASING.md) - Processus détaillé de publication des versions
 
 ## 📝 Licence
 

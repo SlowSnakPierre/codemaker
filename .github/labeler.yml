@@ -34,4 +34,4 @@ hooks:
 
 types:
     - "**/*.d.ts"
-    - src/lib/types.ts
+    - src/core/types

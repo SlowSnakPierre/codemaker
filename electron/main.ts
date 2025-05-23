@@ -1,30 +1,31 @@
-// Fichier de test pour diagnostiquer le problème
+// Fichier principal du processus Electron
 import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import * as fs from "fs";
 import * as path from "path";
 import Store from "electron-store";
 import isDev from "electron-is-dev";
 import { fileURLToPath } from "url";
-import chokidar from "chokidar";
+import chokidar, { type FSWatcher } from "chokidar";
+import { exec } from "child_process";
+import type { StoreData, CommandOptions, ShellCommandResult } from "./types";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const store = new Store();
+const store = new Store<StoreData>();
 
-let mainWindow;
-let fileWatcher;
+let mainWindow: BrowserWindow | null = null;
+let fileWatcher: FSWatcher | null = null;
 
 // Activer les outils de développement
-function openDevTools() {
+function openDevTools(): void {
 	if (mainWindow && isDev) {
 		mainWindow.webContents.openDevTools();
-		console.log("DevTools ouvert");
 	}
 }
 
 // Fonction pour démarrer le watcher sur le répertoire
-function startWatcher(directory) {
+function startWatcher(directory: string): boolean {
 	console.log(`[Watcher] Démarrage du watcher pour: ${directory}`);
 	console.log(`[Watcher] Timestamp: ${new Date().toISOString()}`);
 
@@ -63,14 +64,13 @@ function startWatcher(directory) {
 		usePolling: process.platform === "win32", // Utiliser le polling uniquement sur Windows
 		interval: 300, // Intervalle de polling réduit
 		binaryInterval: 500, // Intervalle pour les fichiers binaires
-		disableGlobbing: true, // Améliore les performances
 		alwaysStat: false, // Désactive la récupération des stats par défaut
 	});
 
 	console.log("[Watcher] Watcher configuré, attachement des écouteurs...");
 
 	// Traitement uniforme des événements du système de fichiers
-	const handleFileEvent = (type, filePath) => {
+	const handleFileEvent = (type: string, filePath: string): void => {
 		console.log(`[Watcher] Événement détecté: ${type} - ${filePath}`);
 
 		if (mainWindow) {
@@ -95,8 +95,10 @@ function startWatcher(directory) {
 			console.log(`[Watcher] Surveillance active pour: ${directory}`);
 
 			// Vérifier et afficher les chemins surveillés
-			const watchedPaths = fileWatcher.getWatched();
-			const pathCount = Object.keys(watchedPaths).length;
+			const watchedPaths = fileWatcher?.getWatched();
+			const pathCount = watchedPaths
+				? Object.keys(watchedPaths).length
+				: 0;
 			console.log("[Watcher] Chemins surveillés:", pathCount);
 
 			if (pathCount === 0) {
@@ -107,7 +109,9 @@ function startWatcher(directory) {
 				// Afficher les premiers chemins surveillés (limité à 5)
 				console.log(
 					"[Watcher] Exemples de chemins surveillés:",
-					Object.keys(watchedPaths).slice(0, 5).join(", "),
+					Object.keys(watchedPaths || {})
+						.slice(0, 5)
+						.join(", "),
 				);
 			}
 
@@ -115,6 +119,8 @@ function startWatcher(directory) {
 			store.set("lastWatcherDirectory", directory);
 			store.set("lastWatcherTimestamp", new Date().toISOString());
 		});
+
+	return true;
 }
 
 // Créer une nouvelle fenêtre
@@ -178,9 +184,17 @@ app.on("window-all-closed", () => {
 
 // Gestion des répertoires
 ipcMain.handle("dialog:openDirectory", async () => {
-	const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+	if (!mainWindow) {
+		console.error("[Main] Erreur: mainWindow est null");
+		return null;
+	}
+
+	// Non-null assertion pour indiquer à TypeScript que mainWindow n'est pas null ici
+	// (nous venons de le vérifier au-dessus)
+	const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow!, {
 		properties: ["openDirectory"],
 	});
+
 	if (canceled) {
 		return null;
 	} else {
@@ -195,7 +209,12 @@ ipcMain.handle("dialog:openDirectory", async () => {
 
 // Gestion des fichiers
 ipcMain.handle("dialog:openFile", async () => {
-	const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+	if (!mainWindow) {
+		console.error("[Main] Erreur: mainWindow est null");
+		return null;
+	}
+
+	const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow!, {
 		properties: ["openFile"],
 		filters: [
 			{ name: "All Files", extensions: ["*"] },
@@ -222,8 +241,13 @@ ipcMain.handle(
 	"dialog:saveFile",
 	async (event, { path: filePath, content }) => {
 		if (!filePath) {
+			if (!mainWindow) {
+				console.error("[Main] Erreur: mainWindow est null");
+				return null;
+			}
+
 			const { canceled, filePath: newPath } = await dialog.showSaveDialog(
-				mainWindow,
+				mainWindow!,
 				{
 					filters: [
 						{ name: "All Files", extensions: ["*"] },
@@ -295,8 +319,10 @@ ipcMain.handle("fs:refreshDirectory", async (event, dirPath) => {
 		} else {
 			return { success: false, message: "Le répertoire n'existe plus" };
 		}
-	} catch (error) {
-		return { success: false, message: error.message };
+	} catch (error: unknown) {
+		const errorMessage =
+			error instanceof Error ? error.message : "Erreur inconnue";
+		return { success: false, message: errorMessage };
 	}
 });
 
@@ -316,8 +342,10 @@ ipcMain.handle("fs:createFile", async (event, { dirPath, fileName }) => {
 				isDirectory: false,
 			},
 		};
-	} catch (error) {
-		return { success: false, message: error.message };
+	} catch (error: unknown) {
+		const errorMessage =
+			error instanceof Error ? error.message : "Erreur inconnue";
+		return { success: false, message: errorMessage };
 	}
 });
 
@@ -337,8 +365,10 @@ ipcMain.handle("fs:createDirectory", async (event, { dirPath, folderName }) => {
 				isDirectory: true,
 			},
 		};
-	} catch (error) {
-		return { success: false, message: error.message };
+	} catch (error: unknown) {
+		const errorMessage =
+			error instanceof Error ? error.message : "Erreur inconnue";
+		return { success: false, message: errorMessage };
 	}
 });
 
@@ -346,17 +376,28 @@ ipcMain.handle("fs:getFileType", async (event, filePath) => {
 	try {
 		const extension = path.extname(filePath).toLowerCase();
 		return { success: true, extension };
-	} catch (error) {
-		return { success: false, message: error.message };
+	} catch (error: unknown) {
+		const errorMessage =
+			error instanceof Error ? error.message : "Erreur inconnue";
+		return { success: false, message: errorMessage };
 	}
 });
 
 // Gestion de la fenêtre
 ipcMain.handle("window:minimize", () => {
+	if (!mainWindow) {
+		console.error("[Main] Erreur: mainWindow est null");
+		return;
+	}
 	mainWindow.minimize();
 });
 
 ipcMain.handle("window:maximize", () => {
+	if (!mainWindow) {
+		console.error("[Main] Erreur: mainWindow est null");
+		return false;
+	}
+
 	if (mainWindow.isMaximized()) {
 		mainWindow.unmaximize();
 		return false;
@@ -367,6 +408,10 @@ ipcMain.handle("window:maximize", () => {
 });
 
 ipcMain.handle("window:close", () => {
+	if (!mainWindow) {
+		console.error("[Main] Erreur: mainWindow est null");
+		return;
+	}
 	mainWindow.close();
 });
 
@@ -387,29 +432,50 @@ ipcMain.handle("fs:restartWatcher", (event, dirPath) => {
 });
 
 // Exécution de commandes shell pour le testeur du watcher
-ipcMain.handle("shell:runCommand", async (event, command, options = {}) => {
-	return new Promise((resolve, reject) => {
-		const { exec } = require("child_process");
-		const cwd = options.cwd || process.cwd();
+ipcMain.handle(
+	"shell:runCommand",
+	async (event, command: string, options: CommandOptions = {}) => {
+		return new Promise<ShellCommandResult>((resolve) => {
+			// Utiliser l'import déjà disponible en haut du fichier au lieu de require
+			const cwd =
+				options.workingDirectory || options.cwd || process.cwd();
 
-		console.log(`[Shell] Exécution de la commande: ${command} dans ${cwd}`);
+			console.log(
+				`[Shell] Exécution de la commande: ${command} dans ${cwd}`,
+			);
 
-		exec(command, { cwd }, (error, stdout, stderr) => {
-			if (error) {
-				console.error(`[Shell] Erreur d'exécution: ${error.message}`);
-				reject(error.message);
-				return;
-			}
+			exec(
+				command,
+				{ cwd },
+				(error: Error | null, stdout: string, stderr: string) => {
+					if (error) {
+						console.error(
+							`[Shell] Erreur d'exécution: ${error.message}`,
+						);
+						resolve({
+							success: false,
+							stdout,
+							stderr,
+							error: error.message,
+						});
+						return;
+					}
 
-			if (stderr) {
-				console.warn(`[Shell] Stderr: ${stderr}`);
-			}
+					if (stderr) {
+						console.warn(`[Shell] Stderr: ${stderr}`);
+					}
 
-			console.log(`[Shell] Stdout: ${stdout}`);
-			resolve({ stdout, stderr });
+					console.log(`[Shell] Stdout: ${stdout}`);
+					resolve({
+						success: true,
+						stdout,
+						stderr,
+					});
+				},
+			);
 		});
-	});
-});
+	},
+);
 
 // Fonction pour vérifier l'état du watcher
 function checkWatcherStatus() {

@@ -1,4 +1,4 @@
-import type { FileData, FileTab } from "@/lib/types";
+import type { FileData, FileTab } from "@/core/types";
 import FileItem from "./file-item";
 import { Button } from "@/components/ui/button";
 import {

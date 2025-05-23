@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import type { WatcherInfoState } from "@/lib/types";
+import type { WatcherInfoState } from "@/core/types";
 
 interface WatcherInfoProps {
 	directory: string | null;

@@ -3,7 +3,7 @@ import React, { type Dispatch, type SetStateAction, useEffect } from "react";
 import FolderItem from "./folder-item";
 import FileItem from "./file-item";
 import { Button } from "@/components/ui/button";
-import type { FileData, FileTab } from "@/lib/types";
+import type { FileData, FileTab } from "@/core/types";
 import { toast } from "sonner";
 
 const Explorer = ({

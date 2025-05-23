@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import type { RecentProject } from "@/lib/types";
+import type { RecentProject } from "@/core/types";
 import {
 	Tooltip,
 	TooltipContent,

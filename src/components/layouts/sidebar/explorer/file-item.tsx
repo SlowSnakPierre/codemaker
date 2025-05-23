@@ -1,4 +1,4 @@
-import type { FileData, FileTab } from "@/lib/types";
+import type { FileData, FileTab } from "@/core/types";
 import { renderFileIcon } from "./file-utils";
 import React from "react";
 import IndentationBars from "./indentation-bars";

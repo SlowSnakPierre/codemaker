@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { FileTab, RecentProject } from "@/lib/types";
+import type { FileTab, RecentProject } from "@/core/types";
 import CodeEditor from "@/components/editor/code-editor";
 import { toast } from "sonner";
 import { XIcon, CircleIcon } from "lucide-react";

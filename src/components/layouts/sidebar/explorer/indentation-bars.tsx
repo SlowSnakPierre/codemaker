@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { FileData, FileTab } from "@/lib/types";
+import type { FileData, FileTab } from "@/core/types";
 
 interface IndentationBarsProps {
 	level: number;

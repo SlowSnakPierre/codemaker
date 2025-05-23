@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { FileData, FileChangeEvent, FileTab } from "@/lib/types";
+import type { FileData, FileChangeEvent, FileTab } from "@/core/types";
 import { toast } from "sonner";
 import SidebarHeader from "./explorer/sidebar-header";
 import Explorer from "./explorer/explorer";
 import SidebarDialogs from "./explorer/sidebar-dialogs";
-import PageSelector from "./page-selector";
 
 interface SidebarProps {
 	activeTab: FileTab | undefined;

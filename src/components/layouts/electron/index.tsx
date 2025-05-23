@@ -7,7 +7,7 @@ import type {
 	FileTab,
 	FileChangeEvent,
 	RecentProject,
-} from "@/lib/types";
+} from "@/core/types";
 import EditorPanel from "@/components/editor/editor-panel";
 import {
 	ResizableHandle,

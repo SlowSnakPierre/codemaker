@@ -15,7 +15,7 @@ import { Loader2, Save, Plus, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { forceRestartWatcher } from "@/lib/watcher-utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import type { FileChangeEvent } from "@/lib/types";
+import type { FileChangeEvent } from "@/core/types";
 
 interface FileWatcherTesterProps {
 	directory: string | null;
