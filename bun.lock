@@ -40,6 +40,7 @@
         "concurrently": "^9.1.2",
         "date-fns": "^3.6.0",
         "electron-is-dev": "^3.0.1",
+        "electron-serve": "^2.1.1",
         "electron-store": "^10.0.1",
         "embla-carousel-react": "^8.6.0",
         "input-otp": "^1.4.2",
@@ -55,6 +56,7 @@
         "recharts": "^2.15.3",
         "sonner": "^2.0.3",
         "tailwind-merge": "^3.3.0",
+        "tree-kill": "^1.2.2",
         "vaul": "^1.1.2",
         "zod": "^3.25.7",
       },
@@ -81,6 +83,10 @@
       },
     },
   },
+  "trustedDependencies": [
+    "@tailwindcss/oxide",
+    "unrs-resolver",
+  ],
   "packages": {
     "7zip-bin": ["7zip-bin@5.2.0", "", {}, "sha512-ukTPVhqG4jNzMro2qA9HSCSSVJN3aN7tlb+hfqYCt3ER0yWroeA2VR38MNrOHLQ/cVj+DaIMad0kFCtWWowh/A=="],
 
@@ -839,6 +845,8 @@
     "electron-is-dev": ["electron-is-dev@3.0.1", "", {}, "sha512-8TjjAh8Ec51hUi3o4TaU0mD3GMTOESi866oRNavj9A3IQJ7pmv+MJVmdZBFGw4GFT36X7bkqnuDNYvkQgvyI8Q=="],
 
     "electron-publish": ["electron-publish@26.0.11", "", { "dependencies": { "@types/fs-extra": "^9.0.11", "builder-util": "26.0.11", "builder-util-runtime": "9.3.1", "chalk": "^4.1.2", "form-data": "^4.0.0", "fs-extra": "^10.1.0", "lazy-val": "^1.0.5", "mime": "^2.5.2" } }, "sha512-a8QRH0rAPIWH9WyyS5LbNvW9Ark6qe63/LqDB7vu2JXYpi0Gma5Q60Dh4tmTqhOBQt0xsrzD8qE7C+D7j+B24A=="],
+
+    "electron-serve": ["electron-serve@2.1.1", "", {}, "sha512-SJdA7bfZuPODK9BkXTZ8EPsQlzg6yNSA0H6811DQvqzyDhPP8icIACA0bIA9aWeT+gmDB7V4eMg/wZhR+ijk6w=="],
 
     "electron-store": ["electron-store@10.0.1", "", { "dependencies": { "conf": "^13.0.0", "type-fest": "^4.20.0" } }, "sha512-Ok0bF13WWdTzZi9rCtPN8wUfwx+yDMmV6PAnCMqjNRKEXHmklW/rV+6DofV/Vf5qoAh+Bl9Bj7dQ+0W+IL2psg=="],
 

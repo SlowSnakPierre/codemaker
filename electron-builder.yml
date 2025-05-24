@@ -1,0 +1,11 @@
+appId: com.codemaker.app
+productName: Codemaker
+directories:
+    output: dist
+    buildResources: "resources"
+files:
+    - from: .
+      filter:
+          - package.json
+          - app
+publish: null

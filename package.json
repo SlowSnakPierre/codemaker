@@ -1,29 +1,35 @@
 {
-	"name": "codemaker",
-	"version": "0.0.1",
 	"private": true,
-	"type": "module",
-	"main": "electron/main.js",
+	"name": "codemaker",
+	"description": "CodeMaker - Your AI-Powered Code IDE",
+	"version": "0.0.1",
+	"author": "Codemaker",
+	"main": "app/background.js",
 	"scripts": {
-		"dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"bun run next:dev\" \"bun run electron:dev\"",
-		"next:dev": "next dev --turbo",
-		"electron:dev": "electron .",
-		"build": "next build && electron-builder",
-		"start": "next start",
-		"check": "next lint && tsc --noEmit",
+		"engine": "bun scripts/engine/index.js",
+		"dev": "bun engine dev",
+		"build": "bun engine build",
+		"build:mac": "bun run build --mac",
+		"build:mac:universal": "bun run build --mac --universal",
+		"build:win32": "bun run build --win --ia32",
+		"build:win64": "bun run build --win --x64",
+		"build:linux": "bun run build --linux",
+		"check": "concurrently -n \"LINT,TYPESCRIPT\" -c \"green,blue\" \"cd renderer && next lint\" \"bun run typecheck\"",
 		"format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
 		"format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
-		"lint": "next lint",
-		"lint:fix": "next lint --fix",
-		"typecheck": "tsc --noEmit",
-		"validate": "bun run typecheck && bun run lint && bun run format:check",
+		"lint": "concurrently -n \"LINT\" -c \"green\" \"cd renderer && next lint\"",
+		"lint:fix": "concurrently -n \"LINT\" -c \"green\" \"cd renderer && next lint --fix\"",
+		"typecheck:main": "tsc --noEmit --project main/tsconfig.json",
+		"typecheck:renderer": "cd renderer && tsc --noEmit",
+		"typecheck": "concurrently -n \"MAIN,RENDERER\" -c \"blue,cyan\" \"bun run typecheck:main\" \"bun run typecheck:renderer\"",
+		"validate": "concurrently -n \"TYPESCRIPT,LINT,PRETTIER\" -c \"blue,green,yellow\" \"bun run typecheck\" \"bun run lint\" \"bun run format:check\"",
 		"prepare": "husky install",
-		"release": "bun scripts/prepare-release.js",
-		"new-branch": "bun scripts/create-branch.js",
-		"new-pr": "bun scripts/create-pr.js"
+		"release": "bun scripts/github/prepare-release.js",
+		"new-branch": "bun scripts/github/create-branch.js",
+		"new-pr": "bun scripts/github/create-pr.js",
+		"postinstall": "electron-builder install-app-deps"
 	},
 	"dependencies": {
-		"0.0.1": "^1.0.1",
 		"@hookform/resolvers": "^5.0.1",
 		"@monaco-editor/react": "^4.7.0",
 		"@radix-ui/react-accordion": "^1.2.10",
@@ -60,6 +66,7 @@
 		"concurrently": "^9.1.2",
 		"date-fns": "^3.6.0",
 		"electron-is-dev": "^3.0.1",
+		"electron-serve": "^2.1.1",
 		"electron-store": "^10.0.1",
 		"embla-carousel-react": "^8.6.0",
 		"input-otp": "^1.4.2",
@@ -75,6 +82,7 @@
 		"recharts": "^2.15.3",
 		"sonner": "^2.0.3",
 		"tailwind-merge": "^3.3.0",
+		"tree-kill": "^1.2.2",
 		"vaul": "^1.1.2",
 		"zod": "^3.25.7"
 	},
@@ -99,26 +107,8 @@
 		"typescript": "^5",
 		"typescript-eslint": "^8.32.1"
 	},
-	"build": {
-		"appId": "com.codemaker.app",
-		"productName": "Codemaker",
-		"files": [
-			"electron/**/*",
-			"node_modules/**/*",
-			".next/**/*",
-			"package.json"
-		],
-		"directories": {
-			"buildResources": "resources"
-		},
-		"win": {
-			"target": "nsis"
-		},
-		"mac": {
-			"target": "dmg"
-		},
-		"linux": {
-			"target": "AppImage"
-		}
-	}
+	"trustedDependencies": [
+		"@tailwindcss/oxide",
+		"unrs-resolver"
+	]
 }
