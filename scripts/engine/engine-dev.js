@@ -100,26 +100,6 @@ let isShuttingDown = false;
 let processes = [];
 let watching = null;
 
-const trackProcess = (proc, name) => {
-	processes.push({ proc, name });
-
-	proc.on("exit", (code) => {
-		logger.info(`${name} exited with code ${code}`);
-
-		processes = processes.filter((p) => p.proc !== proc);
-
-		if (
-			!isShuttingDown &&
-			(name === "electron" || (code !== 0 && code !== null))
-		) {
-			logger.info(`Critical process ${name} died, shutting down all...`);
-			shutdown();
-		}
-	});
-
-	return proc;
-};
-
 const shutdown = () => {
 	if (isShuttingDown) return;
 	isShuttingDown = true;
@@ -173,13 +153,17 @@ process.on("exit", () => {
 	try {
 		let isFirstCompile = true;
 		let isRunning = false;
+		let isRestarting = false;
 		let concurrentlyInstance = null;
 
 		const startAllProcesses = () => {
 			if (isRunning) {
 				logger.info("Stopping previous processes...");
 				if (concurrentlyInstance) {
-					concurrentlyInstance.close();
+					isRestarting = true;
+					const electronCmd = concurrentlyInstance.commands
+						.find((cmd) => cmd.name === "electron")
+						.kill();
 				}
 			}
 
@@ -216,11 +200,32 @@ process.on("exit", () => {
 				},
 				() => {
 					logger.info("One or more processes ended");
-					process.exit(0);
+					if (!isRestarting) process.exit(0);
 				},
 			);
 
+			// Handler pour différencier redémarrage/fermeture manuelle
+			const electronCmd = concurrentlyInstance.commands.find(
+				(cmd) => cmd.name === "electron",
+			);
+			if (electronCmd && electronCmd.proc) {
+				electronCmd.proc.on("close", (code, signal) => {
+					if (isRestarting) {
+						logger.info(
+							"Electron process closed for restart, not shutting down engine.",
+						);
+						isRestarting = false;
+						return;
+					}
+					logger.info(
+						`Process Electron terminé (code=${code}, signal=${signal}), arrêt du dev engine...`,
+					);
+					shutdown();
+				});
+			}
+
 			isRunning = true;
+			isRestarting = false; // Toujours réinitialiser après le lancement
 			isFirstCompile = false;
 		};
 

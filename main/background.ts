@@ -22,6 +22,8 @@ if (isProd) {
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
 		},
+		titleBarStyle: "hiddenInset",
+		// frame: false,
 	});
 
 	if (isProd) {
