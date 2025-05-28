@@ -1,4 +1,8 @@
 {
 	"*.{js,jsx,ts,tsx}": ["eslint --fix", "prettier --write"],
+	"renderer/**/*.{js,jsx,ts,tsx}": [
+		"cd ./renderer && next lint --fix",
+		"prettier --write"
+	],
 	"*.{json,md,mdx,css}": ["prettier --write"]
 }
