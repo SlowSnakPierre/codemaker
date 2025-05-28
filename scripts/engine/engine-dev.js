@@ -187,7 +187,7 @@ process.on("exit", () => {
 			const commands = [
 				{
 					name: "next",
-					command: `npx next -p ${rendererPort} renderer`,
+					command: `bun x next -p ${rendererPort} renderer`,
 					prefixColor: "blue",
 				},
 			];
@@ -195,7 +195,7 @@ process.on("exit", () => {
 			if (!args["--run-only"] || isFirstCompile) {
 				commands.push({
 					name: "electron",
-					command: `npx electron . ${rendererPort} ${electronOptions}`,
+					command: `bun x electron . ${rendererPort} ${electronOptions}`,
 					prefixColor: "green",
 					env: { FORCE_COLOR: "1" },
 				});

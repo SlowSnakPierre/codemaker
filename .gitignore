@@ -17,6 +17,7 @@
 /dist
 /app
 /renderer/.next
+.next
 
 # misc
 .DS_Store
