@@ -48,14 +48,12 @@ Notre cycle de publication suit ces étapes principales :
 ### Versions préliminaires
 
 - **Alpha (x.y.z-alpha.n)**
-
     - En développement actif
     - Potentiellement instable et incomplète
     - Pour tests internes uniquement
     - Peut contenir des bugs connus
 
 - **Beta (x.y.z-beta.n)**
-
     - Fonctionnellement complète mais en phase de test
     - Plus stable que les versions alpha
     - Pour les testeurs externes et les early adopters
@@ -150,7 +148,6 @@ Les notes de version suivent une structure cohérente :
 Une fois la release créée, notre système automatisé :
 
 1. **Construit les binaires** pour toutes les plateformes supportées :
-
     - Windows (.exe, .msi)
     - macOS (.dmg, .pkg)
     - Linux (.AppImage, .deb, .rpm)

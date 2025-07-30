@@ -1,7 +1,7 @@
 import path from "path";
 import { app } from "electron";
 import serve from "electron-serve";
-import { createWindow } from "./helpers";
+import { createWindow, loadHandlers } from "./helpers";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -33,6 +33,8 @@ if (isProd) {
 		await mainWindow.loadURL(`http://localhost:${port}/`);
 		mainWindow.webContents.openDevTools();
 	}
+
+	loadHandlers(mainWindow);
 })();
 
 app.on("window-all-closed", () => {
