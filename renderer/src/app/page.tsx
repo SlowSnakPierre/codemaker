@@ -1,5 +1,5 @@
 "use client";
-import TitleBar from "@components/electron/TitleBar";
+import TitleBar from "@components/electron/titlebar";
 // import { Dialog } from "@components/ui/dialog";
 // import { ResizablePanelGroup } from "@components/ui/resizable";
 import { useEffect, useState } from "react";
@@ -24,7 +24,7 @@ export default function Home() {
 	return (
 		<div className="flex flex-col h-screen overflow-hidden">
 			<TitleBar
-				isElectron={isElectron}
+				isElectron={!!isElectron}
 				onOpenFile={() => {}}
 				onOpenDirectory={() => {}}
 				onSaveFile={() => {}}
